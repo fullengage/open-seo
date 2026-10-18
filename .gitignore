@@ -19,6 +19,7 @@ dist-sourcemaps/
 !.env.preview.example
 !.env.production.example
 !.env.selfhost.example
+client_secret_*.json
 .vercel
 .output
 .nitro

@@ -1,6 +1,6 @@
 ## Fase 1 — Fundação
 - [x] Corrigir país, idioma e domínio inicial (Brasil / pt-BR / 2076 como padrão nativo)
-- [ ] Configurar OAuth do Search Console
+- [x] Configurar OAuth do Search Console (Credenciais A4IA SaaS integradas e ativas na VPS)
 - [ ] Revisar autenticação e isolamento entre clientes
 - [ ] Criar estados claros de erro, carregamento e ausência de dados
 
