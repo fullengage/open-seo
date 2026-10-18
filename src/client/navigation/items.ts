@@ -2,6 +2,7 @@ import {
   Bookmark,
   Bot,
   Brain,
+  Building2,
   ChartLine,
   ClipboardCheck,
   FileText,
@@ -95,11 +96,17 @@ const aiNavItem = linkOptions({
   icon: Bot,
 });
 
+export const companiesNavItem = linkOptions({
+  to: "/companies" as const,
+  label: "Empresas & CNPJ",
+  icon: Building2,
+});
+
 // Shown only when no project is selected; with a project, Agent setup lives in
 // the "AI Tools" group below.
 export const connectNavGroup = {
-  label: "AI Tools",
-  items: [aiNavItem],
+  label: "Ferramentas",
+  items: [companiesNavItem, aiNavItem],
 };
 
 function getProjectNavItems(projectId: string) {
@@ -154,6 +161,7 @@ export function getProjectNavGroups(projectId: string) {
       items: [
         byPath("/p/$projectId/reports"),
         byPath("/p/$projectId/context"),
+        companiesNavItem,
         aiNavItem,
       ],
     },
