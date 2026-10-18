@@ -283,6 +283,23 @@ export function CompaniesPage() {
             </CardContent>
           </Card>
 
+          {segmentMutation.isPending && (
+            <div className="flex items-center justify-center p-12 text-muted-foreground">
+              <Loader2 className="h-6 w-6 animate-spin mr-2" />
+              Filtrando empresas pelo CNAE {cnaeInput} em {ufInput}...
+            </div>
+          )}
+
+          {!segmentMutation.isPending && segmentMutation.isSuccess && segmentResults.length === 0 && (
+            <Card className="p-8 text-center text-muted-foreground">
+              <Building2 className="h-10 w-10 mx-auto text-muted-foreground/50 mb-3" />
+              <p className="font-medium text-foreground">Nenhuma empresa encontrada para este filtro imediato.</p>
+              <p className="text-xs mt-1">
+                A busca rápida por CNPJ individual (na aba ao lado) consulta em tempo real qualquer empresa do Brasil!
+              </p>
+            </Card>
+          )}
+
           {segmentResults.length > 0 && (
             <div className="grid gap-3">
               {segmentResults.map((emp) => (
