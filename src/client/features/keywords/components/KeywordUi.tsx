@@ -25,21 +25,29 @@ export function OverviewStats({ keyword }: { keyword: KeywordResearchRow }) {
         <div className="flex items-center gap-1.5">
           <span className="text-muted-foreground">Vol</span>
           <span className="font-semibold tabular-nums">
-            {formatNumber(keyword.searchVolume)}
+            {keyword.searchVolume == null ? "N/D" : formatNumber(keyword.searchVolume)}
           </span>
         </div>
         <div className="flex items-center gap-1.5">
           <span className="text-muted-foreground">CPC</span>
           <span className="font-semibold tabular-nums">
-            {keyword.cpc == null ? "-" : `$${keyword.cpc.toFixed(2)}`}
+            {keyword.cpc == null ? "N/D" : `$${keyword.cpc.toFixed(2)}`}
           </span>
         </div>
         <div className="flex items-center gap-1.5">
           <span className="text-muted-foreground">Comp</span>
           <span className="font-semibold tabular-nums">
-            {keyword.competition == null ? "-" : keyword.competition.toFixed(2)}
+            {keyword.competition == null ? "N/D" : keyword.competition.toFixed(2)}
           </span>
         </div>
+        {keyword.opportunityScore != null ? (
+          <div className="flex items-center gap-1.5">
+            <span className="text-muted-foreground">Oportunidade</span>
+            <span className="font-semibold text-emerald-500 tabular-nums">
+              {keyword.opportunityScore}%
+            </span>
+          </div>
+        ) : null}
         <IntentBadge intent={keyword.intent} />
       </div>
     </Card>

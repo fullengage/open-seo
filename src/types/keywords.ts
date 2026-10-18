@@ -19,6 +19,9 @@ export type KeywordResearchRow = {
   cpc: number | null;
   competition: number | null;
   intent: KeywordIntent;
+  opportunityScore?: number | null;
+  category?: string | null;
+  source?: string | null;
 };
 
 export type SavedKeywordRow = {

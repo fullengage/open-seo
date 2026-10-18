@@ -1,4 +1,5 @@
-import { Info, Search } from "lucide-react";
+import { useState } from "react";
+import { Info, Search, Upload } from "lucide-react";
 import { getFieldError } from "@/client/lib/forms";
 import { MAX_KEYWORDS_PER_SUBMIT } from "@/client/features/keywords/keywordResearchTypes";
 import { isLabsLocationCode } from "@/client/features/keywords/locations";
@@ -11,6 +12,7 @@ import {
   InputGroupAddon,
   InputGroupTextarea,
 } from "@/client/components/ui/input-group";
+import { KeywordCsvImportDialog } from "@/client/features/keywords/components/KeywordCsvImportDialog";
 import { KeywordAreaField, LocalVolumeCostNote } from "./KeywordAreaField";
 import { KeywordSearchOptions } from "./KeywordSearchOptions";
 import type { KeywordResearchControllerState } from "./types";
@@ -27,6 +29,7 @@ function getTextareaRows(value: string): number {
 
 export function KeywordResearchSearchBar({ controller }: Props) {
   const { controlsForm, handleSearchSubmit } = controller;
+  const [showImportDialog, setShowImportDialog] = useState(false);
 
   return (
     // The city field opens an absolute menu below the row, so the card must
@@ -107,6 +110,17 @@ export function KeywordResearchSearchBar({ controller }: Props) {
 
             <KeywordSearchOptions controller={controller} />
 
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setShowImportDialog(true)}
+              className="w-full lg:w-auto lg:shrink-0 gap-1.5"
+              title="Importar lista de palavras-chave via arquivo CSV ou texto"
+            >
+              <Upload className="size-4" />
+              <span>Importar CSV</span>
+            </Button>
+
             <Button type="submit" className="w-full px-6 lg:w-auto lg:shrink-0">
               Search
             </Button>
@@ -144,6 +158,13 @@ export function KeywordResearchSearchBar({ controller }: Props) {
             </>
           )}
         </controlsForm.Subscribe>
+
+        <KeywordCsvImportDialog
+          open={showImportDialog}
+          onOpenChange={setShowImportDialog}
+          projectId={controller.projectId}
+          onImportToSearch={controller.handleImportKeywords}
+        />
       </CardContent>
     </Card>
   );

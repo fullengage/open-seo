@@ -81,16 +81,23 @@ export function KeywordResearchTable({
           <div
             className={`min-w-48 md:min-w-0 ${row.original.parentKeyword ? "pl-4" : ""}`}
           >
-            <span
-              className={`block whitespace-normal break-words capitalize md:truncate ${row.original.parentKeyword ? "font-normal" : "font-medium"}`}
-              title={
-                row.original.parentKeyword
-                  ? `${row.original.keyword}: matching reported volume with ${row.original.parentKeyword}. Shared volumes may overlap.`
-                  : row.original.keyword
-              }
-            >
-              {row.original.keyword}
-            </span>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span
+                className={`block whitespace-normal break-words capitalize md:truncate ${row.original.parentKeyword ? "font-normal" : "font-medium"}`}
+                title={
+                  row.original.parentKeyword
+                    ? `${row.original.keyword}: matching reported volume with ${row.original.parentKeyword}. Shared volumes may overlap.`
+                    : row.original.keyword
+                }
+              >
+                {row.original.keyword}
+              </span>
+              {row.original.category ? (
+                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-muted/80 text-muted-foreground border">
+                  {row.original.category}
+                </span>
+              ) : null}
+            </div>
           </div>
         ),
         // From md, the keyword column takes the free width and truncates, so
@@ -108,8 +115,12 @@ export function KeywordResearchTable({
             align="right"
           />
         ),
-        cell: ({ row, getValue }) =>
-          row.original.parentKeyword ? null : formatNumber(getValue()),
+        cell: ({ row, getValue }) => {
+          if (row.original.parentKeyword) return null;
+          const val = getValue();
+          if (val == null) return <span className="text-muted-foreground text-xs font-mono">N/D</span>;
+          return formatNumber(val);
+        },
         meta: {
           headerClassName: "text-right",
           cellClassName:
@@ -128,7 +139,7 @@ export function KeywordResearchTable({
         cell: ({ row, getValue }) => {
           if (row.original.parentKeyword) return null;
           const value = getValue();
-          return value == null ? "-" : value.toFixed(2);
+          return value == null ? <span className="text-muted-foreground text-xs font-mono">N/D</span> : `$${value.toFixed(2)}`;
         },
         meta: {
           headerClassName: "text-right",
@@ -148,7 +159,7 @@ export function KeywordResearchTable({
         cell: ({ row, getValue }) => {
           if (row.original.parentKeyword) return null;
           const value = getValue();
-          return value == null ? "-" : value.toFixed(2);
+          return value == null ? <span className="text-muted-foreground text-xs font-mono">N/D</span> : value.toFixed(2);
         },
         meta: {
           headerClassName: "text-right",
@@ -165,12 +176,39 @@ export function KeywordResearchTable({
             align="right"
           />
         ),
-        cell: ({ getValue }) => <ScoreBadge value={getValue()} />,
+        cell: ({ getValue }) => {
+          const val = getValue();
+          if (val == null) return <span className="text-muted-foreground text-xs font-mono">N/D</span>;
+          return <ScoreBadge value={val} />;
+        },
         meta: { headerClassName: "text-right", cellClassName: "text-right" },
       }),
       keywordColumnHelper.accessor("intent", {
         header: "Intent",
         cell: ({ getValue }) => <IntentBadge intent={getValue()} />,
+        meta: {
+          headerClassName: "text-center",
+          cellClassName: "whitespace-nowrap text-center",
+        },
+      }),
+      keywordColumnHelper.accessor((row) => row.opportunityScore, {
+        id: "opportunityScore",
+        header: "Oportunidade",
+        cell: ({ row }) => {
+          const score = row.original.opportunityScore;
+          if (score == null) return <span className="text-muted-foreground text-xs font-mono">N/D</span>;
+          const colorClass =
+            score >= 70
+              ? "text-emerald-500 font-bold"
+              : score >= 45
+                ? "text-amber-500 font-medium"
+                : "text-muted-foreground";
+          return (
+            <div className="flex items-center justify-center gap-1.5">
+              <span className={`tabular-nums text-sm ${colorClass}`}>{score}%</span>
+            </div>
+          );
+        },
         meta: {
           headerClassName: "text-center",
           cellClassName: "whitespace-nowrap text-center",

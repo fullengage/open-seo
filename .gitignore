@@ -45,3 +45,9 @@ dist-sourcemaps/
 
 # Alchemy local state + bundle artifacts (SaaS deploys)
 .alchemy/
+
+# Local data & temporary test scripts
+open-seo-data/
+gtm/
+scripts/test-*.mjs
+scripts/inspect-*.mjs

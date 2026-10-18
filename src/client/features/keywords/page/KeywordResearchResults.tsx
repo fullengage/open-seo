@@ -1,4 +1,4 @@
-import { FileDown, Save, Sheet } from "lucide-react";
+import { FileDown, Info, Save, Sheet } from "lucide-react";
 import {
   lastTwelveMonths,
   MONTH_SHORT_LABELS,
@@ -99,6 +99,14 @@ function KeywordPanel({ controller }: Props) {
             No exact match for{" "}
             <span className="font-medium">"{searchedKeyword}"</span>. Showing
             closest related keywords instead.
+          </AlertDescription>
+        </Alert>
+      ) : null}
+      {controller.rows.some((r) => r.source === "ai" || r.searchVolume == null) ? (
+        <Alert variant="info" role="status" className="py-2">
+          <Info className="size-4 text-emerald-500" />
+          <AlertDescription className="text-xs text-muted-foreground">
+            <span className="font-semibold text-foreground">Descoberta Semântica Ativa:</span> Palavras-chave geradas e categorizadas por intenção e Score de Oportunidade comercial. Métricas numéricas pagas exibidas como N/D.
           </AlertDescription>
         </Alert>
       ) : null}

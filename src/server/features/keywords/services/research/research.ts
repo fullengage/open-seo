@@ -17,10 +17,9 @@ import {
   normalizeKeyword,
   type EnrichedKeyword,
 } from "./helpers";
-import {
-  assertLocalResearchLocation,
-  localizeResearchRows,
-} from "./local-volume";
+import { assertLocalResearchLocation, localizeResearchRows } from "./local-volume";
+import { generateKeywordsWithAi } from "./aiKeywords";
+import { calculateOpportunityScore } from "./opportunityScore";
 import {
   fetchGoogleAdsResearchRows,
   fetchResearchRowsBySource,
@@ -61,6 +60,9 @@ const cachedKeywordRowSchema = z.object({
     "navigational",
     "unknown",
   ]),
+  opportunityScore: z.number().nullable().optional(),
+  category: z.string().nullable().optional(),
+  source: z.string().nullable().optional(),
 });
 
 const cachedResultSchema = z.object({
@@ -329,42 +331,51 @@ export async function research(
               creditFeature,
             );
   } catch (providerError) {
-    console.warn("DataForSEO keyword research failed, generating fallback keywords:", providerError);
-    const prefixes = ["melhor", "como funciona", "preço de", "o que é", "onde comprar", "serviço de", "empresa de", "quanto custa", "curso de", "especialista em", "guia de", "plataforma de", "sistema para", "ferramenta de", "consultoria em"];
-    const fallbackRows: KeywordResearchRow[] = [
-      {
-        keyword: seedKeyword,
-        searchVolume: 2400,
-        trend: [
-          { year: 2026, month: 1, searchVolume: 1900 },
-          { year: 2026, month: 2, searchVolume: 2100 },
-          { year: 2026, month: 3, searchVolume: 2400 }
-        ],
-        cpc: 2.50,
-        competition: 0.45,
-        keywordDifficulty: 38,
-        intent: "commercial",
-      },
-      ...prefixes.slice(0, Math.min(input.resultLimit - 1, 14)).map((p, idx) => ({
-        keyword: `${p} ${seedKeyword}`,
-        searchVolume: Math.max(120, Math.round(1800 / (idx + 1.8))),
-        trend: [
-          { year: 2026, month: 1, searchVolume: 800 },
-          { year: 2026, month: 2, searchVolume: 950 },
-          { year: 2026, month: 3, searchVolume: 1100 }
-        ],
-        cpc: Number((1.20 + (idx * 0.35)).toFixed(2)),
-        competition: Number((0.25 + (idx * 0.04)).toFixed(2)),
-        keywordDifficulty: 25 + (idx * 3),
-        intent: (idx % 3 === 0 ? "informational" : idx % 3 === 1 ? "commercial" : "transactional") as "informational" | "commercial" | "transactional",
-      }))
-    ];
+    console.warn("DataForSEO keyword research unavailable, engaging AI semantic discovery:", providerError);
+    const aiRows = await generateKeywordsWithAi({
+      seedKeyword,
+      languageCode: input.languageCode,
+      locationName: input.locationName,
+      limit: input.resultLimit || 25,
+    });
     result = {
-      rows: fallbackRows,
+      rows: aiRows,
       source: "suggestions",
       usedFallback: true,
     };
   }
+
+  // Fallback se a consulta retornou 0 resultados
+  if (!result || result.rows.length === 0) {
+    console.warn("Keyword research returned 0 rows, engaging AI semantic discovery...");
+    const aiRows = await generateKeywordsWithAi({
+      seedKeyword,
+      languageCode: input.languageCode,
+      locationName: input.locationName,
+      limit: input.resultLimit || 25,
+    });
+    result = {
+      rows: aiRows,
+      source: "suggestions",
+      usedFallback: true,
+    };
+  }
+
+  // Garantir que todas as linhas tenham opportunityScore calculado
+  result.rows = result.rows.map((row) => {
+    if (row.opportunityScore != null) return row;
+    const opp = calculateOpportunityScore({
+      intent: row.intent,
+      searchVolume: row.searchVolume,
+      keywordDifficulty: row.keywordDifficulty,
+      cpc: row.cpc,
+      competition: row.competition,
+    });
+    return {
+      ...row,
+      opportunityScore: opp.score,
+    };
+  });
 
   await setCached(cacheKey, result, CACHE_TTL.researchResult);
   if (!effectiveInput.locationName)

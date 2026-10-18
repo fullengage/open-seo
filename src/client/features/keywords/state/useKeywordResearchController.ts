@@ -257,6 +257,11 @@ export function useKeywordResearchController(
   };
 
   return {
+    projectId: input.projectId,
+    handleImportKeywords: (keywords: string[]) => {
+      controlsForm.setFieldValue("keyword", keywords.join("\n"));
+      void controlsForm.handleSubmit();
+    },
     preferredGroupKeywords,
     setPreferredGroupKeywords,
     activeFilterCount,
