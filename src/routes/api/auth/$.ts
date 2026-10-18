@@ -5,9 +5,26 @@ import { isHostedAuthMode } from "@/lib/auth-mode";
 
 async function handleAuthRequest(request: Request) {
   if (!isHostedAuthMode(env.AUTH_MODE)) {
-    return new Response("Not found", {
-      status: 404,
-    });
+    const url = new URL(request.url);
+    if (url.pathname.endsWith("/get-session")) {
+      return Response.json({
+        user: {
+          id: "local-admin",
+          name: "Admin",
+          email: "admin@localhost",
+          emailVerified: true,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+        session: {
+          id: "local-session",
+          userId: "local-admin",
+          expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
+        },
+      });
+    }
+
+    return Response.json(null);
   }
 
   if (!hasHostedAuthConfig()) {
