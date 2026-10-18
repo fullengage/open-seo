@@ -27,8 +27,8 @@ export const aiTrackers = sqliteTable(
     googleAiOverview: integer("google_ai_overview", { mode: "boolean" })
       .notNull()
       .default(false),
-    locationCode: integer("location_code").notNull().default(2840),
-    languageCode: text("language_code").notNull().default("en"),
+    locationCode: integer("location_code").notNull().default(2076),
+    languageCode: text("language_code").notNull().default("pt"),
     scheduleInterval: text("schedule_interval", {
       enum: ["daily", "weekly", "monthly"],
     })

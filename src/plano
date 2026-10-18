@@ -1,0 +1,23 @@
+## Fase 1 — Fundação
+- [x] Corrigir país, idioma e domínio inicial (Brasil / pt-BR / 2076 como padrão nativo)
+- [ ] Configurar OAuth do Search Console
+- [ ] Revisar autenticação e isolamento entre clientes
+- [ ] Criar estados claros de erro, carregamento e ausência de dados
+
+## Fase 2 — Dados gratuitos
+- [ ] Implementar crawler próprio e incremental
+- [ ] Integrar PageSpeed e Lighthouse
+- [ ] Construir análise de oportunidades pelo Search Console
+- [ ] Criar cache compartilhado com isolamento por autorização
+
+## Fase 3 — Experiência do cliente
+- [ ] Reorganizar a navegação orientada a resultados
+- [ ] Criar onboarding guiado para um domínio
+- [ ] Gerar plano de ação SEO com prioridades justificadas
+- [ ] Apresentar fonte e atualização de cada métrica
+
+## Fase 4 — Escala e monetização
+- [ ] Adicionar cobrança e limites por plano
+- [ ] Implantar filas, observabilidade e alertas
+- [ ] Habilitar provedores pagos opcionais com orçamento
+- [ ] Validar desempenho e segurança com testes automatizados

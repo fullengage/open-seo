@@ -19,6 +19,7 @@ import {
 } from "./helpers";
 import { assertLocalResearchLocation, localizeResearchRows } from "./local-volume";
 import { generateKeywordsWithAi } from "./aiKeywords";
+import { fetchGoogleSuggestions } from "./googleSuggest";
 import { calculateOpportunityScore } from "./opportunityScore";
 import {
   fetchGoogleAdsResearchRows,
@@ -331,15 +332,32 @@ export async function research(
               creditFeature,
             );
   } catch (providerError) {
-    console.warn("DataForSEO keyword research unavailable, engaging AI semantic discovery:", providerError);
-    const aiRows = await generateKeywordsWithAi({
-      seedKeyword,
-      languageCode: input.languageCode,
-      locationName: input.locationName,
-      limit: input.resultLimit || 25,
-    });
+    console.warn("External keyword research unavailable, engaging Google Suggest + AI semantic discovery:", providerError);
+    const [googleRows, aiRows] = await Promise.all([
+      fetchGoogleSuggestions(seedKeyword, {
+        languageCode: input.languageCode,
+        countryCode: "br",
+        limit: 20,
+      }).catch(() => []),
+      generateKeywordsWithAi({
+        seedKeyword,
+        languageCode: input.languageCode,
+        locationName: input.locationName,
+        limit: input.resultLimit || 20,
+      }).catch(() => []),
+    ]);
+
+    const combinedRows = [...googleRows];
+    const seen = new Set(googleRows.map((r) => r.keyword.toLowerCase()));
+    for (const r of aiRows) {
+      if (!seen.has(r.keyword.toLowerCase())) {
+        seen.add(r.keyword.toLowerCase());
+        combinedRows.push(r);
+      }
+    }
+
     result = {
-      rows: aiRows,
+      rows: combinedRows,
       source: "suggestions",
       usedFallback: true,
     };
@@ -347,15 +365,32 @@ export async function research(
 
   // Fallback se a consulta retornou 0 resultados
   if (!result || result.rows.length === 0) {
-    console.warn("Keyword research returned 0 rows, engaging AI semantic discovery...");
-    const aiRows = await generateKeywordsWithAi({
-      seedKeyword,
-      languageCode: input.languageCode,
-      locationName: input.locationName,
-      limit: input.resultLimit || 25,
-    });
+    console.warn("Keyword research returned 0 rows, engaging Google Suggest + AI...");
+    const [googleRows, aiRows] = await Promise.all([
+      fetchGoogleSuggestions(seedKeyword, {
+        languageCode: input.languageCode,
+        countryCode: "br",
+        limit: 20,
+      }).catch(() => []),
+      generateKeywordsWithAi({
+        seedKeyword,
+        languageCode: input.languageCode,
+        locationName: input.locationName,
+        limit: input.resultLimit || 20,
+      }).catch(() => []),
+    ]);
+
+    const combinedRows = [...googleRows];
+    const seen = new Set(googleRows.map((r) => r.keyword.toLowerCase()));
+    for (const r of aiRows) {
+      if (!seen.has(r.keyword.toLowerCase())) {
+        seen.add(r.keyword.toLowerCase());
+        combinedRows.push(r);
+      }
+    }
+
     result = {
-      rows: aiRows,
+      rows: combinedRows,
       source: "suggestions",
       usedFallback: true,
     };

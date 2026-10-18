@@ -67,8 +67,8 @@ export const projects = pgTable(
     domain: text("domain"),
     // Default DataForSEO location/language for the project, set during
     // onboarding and reused by every project-scoped data call.
-    locationCode: integer("location_code").notNull().default(2840),
-    languageCode: text("language_code").notNull().default("en"),
+    locationCode: integer("location_code").notNull().default(2076),
+    languageCode: text("language_code").notNull().default("pt"),
     createdAt: timestampColumn("created_at").notNull().default(isoNow),
     // Soft delete: archived projects are hidden everywhere but their data
     // (keywords, rank tracking, audits) is preserved.
@@ -104,8 +104,8 @@ export const savedKeywords = pgTable(
       .notNull()
       .references(() => projects.id, { onDelete: "cascade" }),
     keyword: text("keyword").notNull(),
-    locationCode: integer("location_code").notNull().default(2840),
-    languageCode: text("language_code").notNull().default("en"),
+    locationCode: integer("location_code").notNull().default(2076),
+    languageCode: text("language_code").notNull().default("pt"),
     createdAt: timestampColumn("created_at").notNull().default(isoNow),
   },
   (table) => [
@@ -220,8 +220,8 @@ export const rankTrackingConfigs = pgTable(
       .notNull()
       .references(() => projects.id, { onDelete: "cascade" }),
     domain: text("domain").notNull(),
-    locationCode: integer("location_code").notNull().default(2840),
-    languageCode: text("language_code").notNull().default("en"),
+    locationCode: integer("location_code").notNull().default(2076),
+    languageCode: text("language_code").notNull().default("pt"),
     devices: text("devices", {
       enum: ["both", "desktop", "mobile"],
     })

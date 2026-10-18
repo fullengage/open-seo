@@ -16,10 +16,10 @@
  * googleAdsOnly entries must exist in BOTH the Google Ads and SERP language
  * lists (rank tracking shares this picker and uses the SERP API).
  *
- * Entries are sorted alphabetically by country name; pick US as the
+ * Entries are sorted alphabetically by country name; pick Brazil as the
  * product-wide default via DEFAULT_LOCATION_CODE below.
  */
-export const DEFAULT_LOCATION_CODE = 2840;
+export const DEFAULT_LOCATION_CODE = 2076;
 
 /**
  * Human-readable form of a canonical DataForSEO location_name, whose segments
@@ -761,7 +761,7 @@ export function resolveLabsMarket(
     args,
     projectIsServed
       ? project
-      : { locationCode: DEFAULT_LOCATION_CODE, languageCode: "en" },
+      : { locationCode: DEFAULT_LOCATION_CODE, languageCode: "pt" },
   );
 }
 
