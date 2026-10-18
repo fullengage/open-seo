@@ -175,80 +175,81 @@ export async function researchWebsite(
                     "The search budget is exhausted. Use the existing results.",
                   );
                 searched = true;
-                const results = await Promise.allSettled(
-                  queries.map(async (keyword) => {
-                    // Searches belong to the already-admitted research task; collect
-                    // actual cost instead of reserving credits and interrupting it.
-                    let response;
-                    for (let attempt = 0; ; attempt++) {
-                      try {
-                        response = await fetchLiveSerp({
-                          keyword,
-                          ...market,
-                          depth: 10,
-                        });
-                        break;
-                      } catch (error) {
-                        if (error instanceof DataforseoChargedTaskError)
-                          spend.push({
-                            provider: "dataforseo",
-                            creditFeature: "keyword_research",
-                            operation: "project_website_research",
-                            costUsd: error.billing.costUsd,
+                try {
+                  const results = await Promise.allSettled(
+                    queries.map(async (keyword) => {
+                      let response;
+                      for (let attempt = 0; ; attempt++) {
+                        try {
+                          response = await fetchLiveSerp({
+                            keyword,
+                            ...market,
+                            depth: 10,
                           });
-                        // DataForSEO's search engine errors (40101) usually clear
-                        // within seconds. Timeouts already used their whole budget.
-                        if (
-                          attempt === SEARCH_RETRIES ||
-                          !isSearchOutage(error) ||
-                          error.name === "DataForSEOTimeoutError"
-                        )
-                          throw error;
+                          break;
+                        } catch (error) {
+                          if (error instanceof DataforseoChargedTaskError)
+                            spend.push({
+                              provider: "dataforseo",
+                              creditFeature: "keyword_research",
+                              operation: "project_website_research",
+                              costUsd: error.billing.costUsd,
+                            });
+                          if (
+                            attempt === SEARCH_RETRIES ||
+                            !isSearchOutage(error) ||
+                            error.name === "DataForSEOTimeoutError"
+                          )
+                            throw error;
+                        }
+                        await new Promise((resolve) =>
+                          setTimeout(resolve, 1000 * 2 ** attempt),
+                        );
                       }
-                      await new Promise((resolve) =>
-                        setTimeout(resolve, 1000 * 2 ** attempt),
-                      );
-                    }
-                    spend.push({
-                      provider: "dataforseo",
-                      creditFeature: "keyword_research",
-                      operation: "project_website_research",
-                      costUsd: response.billing.costUsd,
-                    });
+                      spend.push({
+                        provider: "dataforseo",
+                        creditFeature: "keyword_research",
+                        operation: "project_website_research",
+                        costUsd: response.billing.costUsd,
+                      });
+                      return {
+                        keyword,
+                        items: response.data
+                          .filter((item) => item.type === "organic")
+                          .map((item) => ({
+                            title: item.title,
+                            url: item.url,
+                            description: item.description,
+                          })),
+                      };
+                    }),
+                  );
+                  searchSucceeded = results.some(
+                    (searchResult) => searchResult.status === "fulfilled",
+                  );
+                  searchOutage = results.every(
+                    (searchResult) => searchResult.status === "rejected",
+                  );
+                  if (searchOutage || !searchSucceeded)
                     return {
-                      keyword,
-                      items: response.data
-                        .filter((item) => item.type === "organic")
-                        .map((item) => ({
-                          title: item.title,
-                          url: item.url,
-                          description: item.description,
-                        })),
+                      error:
+                        "Live search is currently unavailable. Base your topics and audience directly on the business website content and customer offerings.",
                     };
-                  }),
-                );
-                searchSucceeded = results.some(
-                  (searchResult) => searchResult.status === "fulfilled",
-                );
-                searchOutage = results.every(
-                  (searchResult) =>
-                    searchResult.status === "rejected" &&
-                    isSearchOutage(searchResult.reason),
-                );
-                if (searchOutage)
+                  return results.map((searchResult, index) =>
+                    searchResult.status === "fulfilled"
+                      ? searchResult.value
+                      : {
+                          keyword: queries[index],
+                          error:
+                            "Live search failed for this query. Use other successful results.",
+                        },
+                  );
+                } catch {
                   return {
                     error:
-                      "Live search is unavailable. Skip competitor research and return no competitors.",
+                      "Live search provider unavailable. Generate suggestions and topics directly from the scraped website context.",
                   };
-                return results.map((searchResult, index) =>
-                  searchResult.status === "fulfilled"
-                    ? searchResult.value
-                    : {
-                        keyword: queries[index],
-                        error:
-                          "Live search failed for this query. Use other successful results.",
-                      },
-                );
+                }
               },
             }),
             read_business_sites: tool({

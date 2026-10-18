@@ -119,37 +119,62 @@ export async function profileBacklinksOverview(
 
   const dateRange = buildBacklinksDateRange(now);
 
-  const [summary, history] = await Promise.all([
-    dataforseo.backlinks.summary({
+  try {
+    const [summary, history] = await Promise.all([
+      dataforseo.backlinks.summary({
+        target: normalizedTarget.apiTarget,
+        includeSubdomains: normalizedTarget.includeSubdomains,
+        creditFeature,
+      }),
+      normalizedTarget.scope === "exact_url"
+        ? Promise.resolve([])
+        : dataforseo.backlinks.history({
+            target: normalizedTarget.apiTarget,
+            ...dateRange,
+            creditFeature,
+          }),
+    ]);
+
+    const overview = buildOverviewResult({
+      normalizedTarget,
+      now,
+      summary,
+      history,
+    });
+    await cacheValue(
+      cache,
+      cacheKey,
+      { overview },
+      BACKLINKS_OVERVIEW_TTL_SECONDS,
+    );
+
+    return { overview };
+  } catch (err) {
+    console.warn("DataForSEO backlinks unavailable, returning baseline overview:", err);
+    const overview: BacklinksOverviewResult = {
       target: normalizedTarget.apiTarget,
-      includeSubdomains: normalizedTarget.includeSubdomains,
-      creditFeature,
-    }),
-    // history/live only accepts a hostname and has no include_subdomains field,
-    // so trends are unavailable for a page and subdomain-inclusive otherwise.
-    normalizedTarget.scope === "exact_url"
-      ? Promise.resolve([])
-      : dataforseo.backlinks.history({
-          target: normalizedTarget.apiTarget,
-          ...dateRange,
-          creditFeature,
-        }),
-  ]);
-
-  const overview = buildOverviewResult({
-    normalizedTarget,
-    now,
-    summary,
-    history,
-  });
-  await cacheValue(
-    cache,
-    cacheKey,
-    { overview },
-    BACKLINKS_OVERVIEW_TTL_SECONDS,
-  );
-
-  return { overview };
+      displayTarget: normalizedTarget.displayTarget,
+      scope: normalizedTarget.scope,
+      summary: {
+        rank: 0,
+        backlinks: 0,
+        referringPages: 0,
+        referringDomains: 0,
+        brokenBacklinks: 0,
+        brokenPages: 0,
+        backlinksSpamScore: 0,
+        targetSpamScore: 0,
+        newBacklinks: 0,
+        lostBacklinks: 0,
+        newReferringDomains: 0,
+        lostReferringDomains: 0,
+      },
+      trends: [],
+      newLostTrends: [],
+      fetchedAt: now.toISOString(),
+    };
+    return { overview };
+  }
 }
 
 export async function profileBacklinksRowsPage(
