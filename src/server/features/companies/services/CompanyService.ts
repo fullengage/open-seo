@@ -151,6 +151,9 @@ export const CompanyService = {
   },
 
   async searchBySegment(cnae: string, uf: string, limit = 20): Promise<CompanyDetail[]> {
+    const cleanCnae = cnae.replace(/\D/g, "");
+    if (!cleanCnae) return [];
+
     const client = getDbClient();
     if (!client) return [];
 
@@ -176,10 +179,10 @@ export const CompanyService = {
           JOIN empresa emp ON emp.cnpj_basico = e.cnpj_basico
           LEFT JOIN cnae c ON c.codigo = e.cnae
           LEFT JOIN municipio m ON m.codigo = e.municipio
-          WHERE e.cnae = ? AND e.uf = ?
+          WHERE (e.cnae = ? OR e.cnae LIKE ?) AND e.uf = ?
           LIMIT ?
         `,
-        args: [cnae, uf.toUpperCase(), limit],
+        args: [cleanCnae, `${cleanCnae}%`, uf.toUpperCase(), limit],
       });
 
       return q.rows.map((row) => ({
