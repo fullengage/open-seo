@@ -101,13 +101,21 @@ async function getSerpLiveAnalysis(
     return cached.data;
   }
 
-  const liveItems = await createDataforseoClient(billingCustomer).serp.live({
-    keyword,
-    locationCode: input.locationCode,
-    languageCode: input.languageCode,
-    locationName: input.locationName,
-    depth,
-  });
+  let liveItems: SerpLiveItem[] = [];
+  try {
+    liveItems = await createDataforseoClient(billingCustomer).serp.live({
+      keyword,
+      locationCode: input.locationCode,
+      languageCode: input.languageCode,
+      locationName: input.locationName,
+      depth,
+    });
+  } catch (err) {
+    console.warn("keywords.serp.live failed (fallback gracefully):", err);
+    if (cached.success) {
+      return cached.data;
+    }
+  }
 
   const items = mapOrganicSerpItems(liveItems);
   const result: SerpAnalysisResult = {

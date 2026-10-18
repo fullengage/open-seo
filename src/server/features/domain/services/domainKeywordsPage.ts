@@ -86,15 +86,23 @@ export async function getKeywordsPage(
   }
 
   const dataforseo = createDataforseoClient(billingCustomer);
-  const response = await dataforseo.domain.rankedKeywords({
-    target: target.hostname,
-    locationCode: input.locationCode,
-    languageCode: input.languageCode,
-    limit: input.pageSize,
-    offset,
-    orderBy,
-    filters: filters.length > 0 ? filters : undefined,
-  });
+  let response: { items: any[]; totalCount: number | null } = {
+    items: [],
+    totalCount: 0,
+  };
+  try {
+    response = await dataforseo.domain.rankedKeywords({
+      target: target.hostname,
+      locationCode: input.locationCode,
+      languageCode: input.languageCode,
+      limit: input.pageSize,
+      offset,
+      orderBy,
+      filters: filters.length > 0 ? filters : undefined,
+    });
+  } catch (err) {
+    console.warn("DomainService.rankedKeywords failed (fallback gracefully):", err);
+  }
 
   const keywords = response.items
     .map((item) => mapKeywordItem(item))

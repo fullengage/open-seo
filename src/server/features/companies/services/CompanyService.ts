@@ -8,23 +8,25 @@ let dbClient: ReturnType<typeof createClient> | null = null;
 function getDbClient() {
   if (dbClient) return dbClient;
 
-  // Caminho no Windows local ou no container Docker Linux
-  const possiblePaths = [
-    path.resolve("open-seo-data/cnpj/cnpj-2026-10.db"),
-    "/app/open-seo-data/cnpj/cnpj-2026-10.db",
-    "/root/openseo-data/cnpj-2026-10.db",
-  ];
+  const defaultPath =
+    typeof process !== "undefined" && process.platform === "win32"
+      ? path.resolve("open-seo-data/cnpj/cnpj-2026-10.db")
+      : "/root/openseo-data/cnpj-2026-10.db";
 
-  const dbPath = possiblePaths.find((p) => existsSync(p));
-  if (!dbPath) {
+  const dbPath =
+    (typeof process !== "undefined" && process.env.CNPJ_DATABASE_PATH) ||
+    defaultPath;
+
+  try {
+    const normalized = dbPath.replace(/\\/g, "/");
+    dbClient = createClient({
+      url: `file:${normalized}`,
+    });
+    return dbClient;
+  } catch (err) {
+    console.error("CompanyService.getDbClient error:", err);
     return null;
   }
-
-  const normalized = dbPath.replace(/\\/g, "/");
-  dbClient = createClient({
-    url: `file:${normalized}`,
-  });
-  return dbClient;
 }
 
 export const CompanyService = {

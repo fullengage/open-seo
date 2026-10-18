@@ -76,14 +76,18 @@ async function getOverview(
   const nowIso = new Date().toISOString();
   const dataforseo = createDataforseoClient(billingCustomer);
 
-  const metricsResponse = await dataforseo.domain.rankOverview({
-    target: domain,
-    locationCode: input.locationCode,
-    languageCode: input.languageCode,
-    ...metering,
-  });
-
-  const metrics = metricsResponse[0];
+  let metrics: any = null;
+  try {
+    const metricsResponse = await dataforseo.domain.rankOverview({
+      target: domain,
+      locationCode: input.locationCode,
+      languageCode: input.languageCode,
+      ...metering,
+    });
+    metrics = metricsResponse[0];
+  } catch (err) {
+    console.warn("DomainService.rankOverview failed (fallback gracefully):", err);
+  }
 
   const organicTraffic =
     metrics?.metrics?.organic?.etv != null

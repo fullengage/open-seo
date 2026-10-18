@@ -206,16 +206,24 @@ export async function profileBacklinksRowsPage(
   );
   const filters = prependScopeClauses(scopeFilter, userFilters);
 
-  const response = await dataforseo.backlinks.rows({
-    target: target.apiTarget,
-    includeSubdomains: target.includeSubdomains,
-    limit: input.pageSize,
-    offset,
-    orderBy: buildBacklinksRowsOrderBy(input.sortField, input.sortOrder),
-    filters: filters.length > 0 ? filters : undefined,
-    mode: input.mode,
-    ...spamOptions,
-  });
+  let response: { items: any[]; totalCount: number | null } = {
+    items: [],
+    totalCount: 0,
+  };
+  try {
+    response = await dataforseo.backlinks.rows({
+      target: target.apiTarget,
+      includeSubdomains: target.includeSubdomains,
+      limit: input.pageSize,
+      offset,
+      orderBy: buildBacklinksRowsOrderBy(input.sortField, input.sortOrder),
+      filters: filters.length > 0 ? filters : undefined,
+      mode: input.mode,
+      ...spamOptions,
+    });
+  } catch (error) {
+    console.warn("dataforseo.backlinks.rows failed (fallback gracefully):", error);
+  }
 
   const result = buildPageResult(input, offset, {
     rows: mapBacklinksRows(response.items),

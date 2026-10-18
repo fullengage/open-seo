@@ -178,15 +178,23 @@ export async function getPagesPage(
   }
 
   const dataforseo = createDataforseoClient(billingCustomer);
-  const response = await dataforseo.domain.relevantPages({
-    target: target.hostname,
-    locationCode: input.locationCode,
-    languageCode: input.languageCode,
-    limit: input.pageSize,
-    offset,
-    orderBy,
-    filters: filters.length > 0 ? filters : undefined,
-  });
+  let response: { items: any[]; totalCount: number | null } = {
+    items: [],
+    totalCount: 0,
+  };
+  try {
+    response = await dataforseo.domain.relevantPages({
+      target: target.hostname,
+      locationCode: input.locationCode,
+      languageCode: input.languageCode,
+      limit: input.pageSize,
+      offset,
+      orderBy,
+      filters: filters.length > 0 ? filters : undefined,
+    });
+  } catch (err) {
+    console.warn("DomainService.relevantPages failed (fallback gracefully):", err);
+  }
 
   const pages = response.items
     .map(mapPageItem)
