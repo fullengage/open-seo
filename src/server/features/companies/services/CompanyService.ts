@@ -1,115 +1,25 @@
-import { createClient } from "@libsql/client";
-import path from "node:path";
-import { existsSync } from "node:fs";
 import type { CompanyDetail } from "@/types/schemas/company";
 
-let dbClient: ReturnType<typeof createClient> | null = null;
-
-function getDbClient() {
-  if (dbClient) return dbClient;
-
-  const defaultPath =
-    typeof process !== "undefined" && process.platform === "win32"
-      ? path.resolve("open-seo-data/cnpj/cnpj-2026-10.db")
-      : "/root/openseo-data/cnpj-2026-10.db";
-
-  const dbPath =
-    (typeof process !== "undefined" && process.env.CNPJ_DATABASE_PATH) ||
-    defaultPath;
-
-  try {
-    const normalized = dbPath.replace(/\\/g, "/");
-    dbClient = createClient({
-      url: `file:${normalized}`,
-    });
-    return dbClient;
-  } catch (err) {
-    console.error("CompanyService.getDbClient error:", err);
-    return null;
-  }
-}
+const DAEMON_URL = process.env.CNPJ_DAEMON_URL || "http://127.0.0.1:3005";
 
 export const CompanyService = {
   async getByCnpj(rawCnpj: string): Promise<CompanyDetail | null> {
     const cleanCnpj = rawCnpj.replace(/\D/g, "");
     if (cleanCnpj.length !== 14) return null;
 
-    const client = getDbClient();
-
-    // 1. Tentar busca no banco SQLite local de alta velocidade
-    if (client) {
-      try {
-        const estabRes = await client.execute({
-          sql: `
-            SELECT 
-              e.cnpj,
-              e.cnpj_basico,
-              e.fantasia,
-              emp.razao,
-              emp.capital,
-              emp.porte,
-              e.cnae,
-              c.descricao as cnae_desc,
-              e.uf,
-              m.nome as municipio_nome,
-              e.bairro,
-              e.cep,
-              e.tel,
-              e.email
-            FROM estab e
-            JOIN empresa emp ON emp.cnpj_basico = e.cnpj_basico
-            LEFT JOIN cnae c ON c.codigo = e.cnae
-            LEFT JOIN municipio m ON m.codigo = e.municipio
-            WHERE e.cnpj = ?
-            LIMIT 1
-          `,
-          args: [cleanCnpj],
-        });
-
-        if (estabRes.rows.length > 0) {
-          const row = estabRes.rows[0];
-          const cnpjBasico = String(row.cnpj_basico);
-
-          const sociosRes = await client.execute({
-            sql: `
-              SELECT 
-                s.nome, 
-                s.qualificacao, 
-                q.descricao as qualif_desc, 
-                s.entrada 
-              FROM socio s 
-              LEFT JOIN qualificacao q ON q.codigo = s.qualificacao 
-              WHERE s.cnpj_basico = ?
-            `,
-            args: [cnpjBasico],
-          });
-
-          return {
-            cnpj: String(row.cnpj),
-            cnpjBasico,
-            razaoSocial: String(row.razao),
-            nomeFantasia: row.fantasia ? String(row.fantasia) : null,
-            capitalSocial: row.capital ? Number(row.capital) : null,
-            porte: row.porte ? String(row.porte) : null,
-            cnae: String(row.cnae),
-            cnaeDescricao: row.cnae_desc ? String(row.cnae_desc) : null,
-            uf: String(row.uf),
-            municipio: row.municipio_nome ? String(row.municipio_nome) : null,
-            bairro: row.bairro ? String(row.bairro) : null,
-            cep: row.cep ? String(row.cep) : null,
-            telefone: row.tel ? String(row.tel) : null,
-            email: row.email ? String(row.email) : null,
-            socios: sociosRes.rows.map((s) => ({
-              nome: String(s.nome),
-              qualificacao: s.qualificacao ? String(s.qualificacao) : null,
-              qualificacaoDescricao: s.qualif_desc ? String(s.qualif_desc) : null,
-              entrada: s.entrada ? String(s.entrada) : null,
-            })),
-          };
+    // 1. Tentar busca no daemon local SQLite de alta velocidade
+    try {
+      const res = await fetch(`${DAEMON_URL}/cnpj?cnpj=${cleanCnpj}`, {
+        signal: AbortSignal.timeout(2000),
+      });
+      if (res.ok) {
+        const data = (await res.json()) as any;
+        if (data && data.cnpj) {
+          return data as CompanyDetail;
         }
-      } catch (err) {
-        console.warn("CompanyService.localDb error, falling back to BrasilAPI:", err);
       }
+    } catch {
+      // Ignora falha do daemon e faz fallback transparente para BrasilAPI
     }
 
     // 2. Fallback online em tempo real via BrasilAPI
@@ -156,57 +66,17 @@ export const CompanyService = {
     const cleanCnae = cnae.replace(/\D/g, "");
     if (!cleanCnae) return [];
 
-    const client = getDbClient();
-    if (!client) return [];
-
     try {
-      const q = await client.execute({
-        sql: `
-          SELECT 
-            e.cnpj,
-            e.cnpj_basico,
-            e.fantasia,
-            emp.razao,
-            emp.capital,
-            emp.porte,
-            e.cnae,
-            c.descricao as cnae_desc,
-            e.uf,
-            m.nome as municipio_nome,
-            e.bairro,
-            e.cep,
-            e.tel,
-            e.email
-          FROM estab e
-          JOIN empresa emp ON emp.cnpj_basico = e.cnpj_basico
-          LEFT JOIN cnae c ON c.codigo = e.cnae
-          LEFT JOIN municipio m ON m.codigo = e.municipio
-          WHERE (e.cnae = ? OR e.cnae LIKE ?) AND e.uf = ?
-          LIMIT ?
-        `,
-        args: [cleanCnae, `${cleanCnae}%`, uf.toUpperCase(), limit],
-      });
-
-      return q.rows.map((row) => ({
-        cnpj: String(row.cnpj),
-        cnpjBasico: String(row.cnpj_basico),
-        razaoSocial: String(row.razao),
-        nomeFantasia: row.fantasia ? String(row.fantasia) : null,
-        capitalSocial: row.capital ? Number(row.capital) : null,
-        porte: row.porte ? String(row.porte) : null,
-        cnae: String(row.cnae),
-        cnaeDescricao: row.cnae_desc ? String(row.cnae_desc) : null,
-        uf: String(row.uf),
-        municipio: row.municipio_nome ? String(row.municipio_nome) : null,
-        bairro: row.bairro ? String(row.bairro) : null,
-        cep: row.cep ? String(row.cep) : null,
-        telefone: row.tel ? String(row.tel) : null,
-        email: row.email ? String(row.email) : null,
-        socios: [],
-      }));
+      const res = await fetch(
+        `${DAEMON_URL}/segment?cnae=${encodeURIComponent(cleanCnae)}&uf=${encodeURIComponent(uf.toUpperCase())}&limit=${limit}`,
+        { signal: AbortSignal.timeout(4000) }
+      );
+      if (res.ok) {
+        return (await res.json()) as CompanyDetail[];
+      }
     } catch (err) {
       console.error("CompanyService.searchBySegment error:", err);
-      return [];
     }
+    return [];
   },
 };

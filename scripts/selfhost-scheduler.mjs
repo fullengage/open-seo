@@ -117,9 +117,18 @@ async function serveWithScheduler() {
     ],
     { stdio: "inherit" },
   );
+  const cnpjDaemon = spawn(
+    process.execPath,
+    ["scripts/cnpj-daemon.mjs"],
+    { stdio: "inherit" },
+  );
+  cnpjDaemon.once("error", (err) => {
+    console.warn("[scheduler] Could not start cnpj-daemon (non-fatal):", err);
+  });
   const shutdown = () => {
     stop.abort();
     preview.kill("SIGTERM");
+    cnpjDaemon.kill("SIGTERM");
   };
   process.once("SIGTERM", shutdown);
   process.once("SIGINT", shutdown);
