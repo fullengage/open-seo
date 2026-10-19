@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { requireProjectContext } from "@/serverFunctions/middleware";
+import { requireAuthenticatedContext } from "@/serverFunctions/middleware";
 import {
   buildStoredPageSpeedPayload,
   type GooglePageSpeedResponse,
@@ -12,7 +12,7 @@ const onDemandPageSpeedSchema = z.object({
 });
 
 export const runOnDemandPageSpeed = createServerFn({ method: "POST" })
-  .middleware(requireProjectContext)
+  .middleware(requireAuthenticatedContext)
   .validator(onDemandPageSpeedSchema)
   .handler(async ({ data }) => {
     const apiKey =
