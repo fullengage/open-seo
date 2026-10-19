@@ -5,6 +5,8 @@ export type PipelineStage =
   | "negotiation"
   | "won";
 
+export type LeadTemperature = "cold" | "warm" | "hot";
+
 export interface PipelineLead {
   id: string;
   cnpj: string;
@@ -20,6 +22,27 @@ export interface PipelineLead {
   stage: PipelineStage;
   createdAt: string;
   notes?: string;
+
+  // Campos de Enriquecimento B2B (360° / CRM & Prospecção):
+  website?: string | null;
+  instagram?: string | null;
+  linkedin?: string | null;
+  whatsapp?: string | null;
+  decisorNome?: string | null;
+  decisorCargo?: string | null;
+  decisorEmail?: string | null;
+  decisorLinkedin?: string | null;
+  capitalSocial?: number | null;
+  porte?: string | null;
+  bairro?: string | null;
+  cep?: string | null;
+  endereco?: string | null;
+  ticketEstimado?: number | null;
+  temperatura?: LeadTemperature;
+  proximoPasso?: string | null;
+  dataProximoContato?: string | null;
+  socios?: { nome: string; qualificacaoDescricao?: string | null }[];
+  isEnriched?: boolean;
 }
 
 export interface ProgrammaticPage {
