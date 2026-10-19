@@ -12,6 +12,7 @@ import { DashboardKeywords } from "./DashboardKeywords";
 import { DashboardBacklinks } from "./DashboardBacklinks";
 import { DashboardNewQueries } from "./DashboardNewQueries";
 import { DashboardLinkActivity } from "./DashboardLinkActivity";
+import { DashboardActionPlan } from "./DashboardActionPlan";
 import { dashboardSiteTabSchema } from "@/types/schemas/dashboard";
 import type { z } from "zod";
 import { Fragment } from "react";
@@ -217,8 +218,9 @@ export function DashboardPage({
           <TabsList aria-label="Your website dashboard" className="h-9">
             {(
               [
-                ["overview", "Overview"],
-                ["keywords", "Keywords"],
+                ["overview", "Visão Geral"],
+                ["action-plan", "Plano de Ação"],
+                ["keywords", "Palavras-chave"],
                 ["backlinks", "Backlinks"],
               ] as const
             ).map(([value, label]) => (
@@ -239,6 +241,10 @@ export function DashboardPage({
                 <Fragment key={card.key}>{card.node}</Fragment>
               ),
             )}
+          </TabsContent>
+
+          <TabsContent value="action-plan" keepMounted={false}>
+            <DashboardActionPlan projectId={projectId} />
           </TabsContent>
 
           <TabsContent value="keywords" keepMounted={false}>

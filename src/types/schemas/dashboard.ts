@@ -28,6 +28,7 @@ export const dashboardSiteTabSchema = z.enum([
   "overview",
   "keywords",
   "backlinks",
+  "action-plan",
 ]);
 export const dashboardSearchSchema = z.object({
   tab: dashboardSiteTabSchema.optional().catch(undefined),

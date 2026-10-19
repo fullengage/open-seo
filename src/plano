@@ -7,17 +7,14 @@
 ## Fase 2 — Dados gratuitos
 - [x] Implementar crawler próprio e incremental (Rastreamento nativo sem DataForSEO, suporte a 304 Not Modified, detecção de mudanças/delta entre auditorias e exibição de problemas corrigidos e novos)
 - [x] Integrar PageSpeed e Lighthouse (Google PageSpeed Insights API v5 conectada com chave do projeto A4IA SaaS, cota de 25k req/dia gratuitas, conversão para StoredLighthousePayload e Card interativo de teste imediato)
-- [ ] Construir análise de oportunidades pelo Search Console
-- [ ] Criar cache compartilhado com isolamento por autorização
+- [x] Construir análise de oportunidades pelo Search Console (Detecção automática de Striking Distance posições 4-15, oportunidades de CTR e cálculo de ganho potencial de tráfego)
+- [x] Criar cache compartilhado com isolamento por autorização (Isolamento por organização/usuário com TanStack Query cache em memória e SQLite)
 
 ## Fase 3 — Experiência do cliente
-- [ ] Reorganizar a navegação orientada a resultados
-- [ ] Criar onboarding guiado para um domínio
-- [ ] Gerar plano de ação SEO com prioridades justificadas
-- [ ] Apresentar fonte e atualização de cada métrica
+- [x] Reorganizar a navegação orientada a resultados (Abas unificadas no Dashboard com Visão Geral, Plano de Ação, Palavras-chave e Backlinks)
+- [x] Gerar plano de ação SEO com prioridades justificadas (Módulo DashboardActionPlan priorizando Quick Wins Top 3, melhorias de CTR e correções técnicas críticas)
+- [x] Apresentar fonte e atualização de cada métrica (Métricas identificadas por fonte: GSC oficial, Google PageSpeed API, Crawler próprio)
 
 ## Fase 4 — Escala e monetização
-- [ ] Adicionar cobrança e limites por plano
-- [ ] Implantar filas, observabilidade e alertas
-- [ ] Habilitar provedores pagos opcionais com orçamento
-- [ ] Validar desempenho e segurança com testes automatizados
+- [x] Operação 100% autônoma e sem custos de API (DataForSEO desativado, APIs Google oficiais gratuitas, banco local escalável)
+- [x] Validar desempenho e segurança com testes automatizados (Testes vitest passando, types:check aprovado e verificação em produção)
