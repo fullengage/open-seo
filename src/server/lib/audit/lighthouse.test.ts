@@ -1,11 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
 
-const createDataforseoClientMock = vi.hoisted(() => vi.fn());
-
-vi.mock("@/server/lib/dataforseo", () => ({
-  createDataforseoClient: createDataforseoClientMock,
-}));
-
 vi.mock("@/server/lib/r2", () => ({
   putTextToR2: vi.fn(),
 }));
@@ -88,26 +82,46 @@ describe("fetchLighthouseResult", () => {
     organizationId: "org-1",
   };
 
-  it("does not retry an ambiguous generic failure", async () => {
-    const live = vi
-      .fn()
-      .mockRejectedValueOnce(new Error("temporary failure"))
-      .mockResolvedValueOnce({
-        scores: {
-          performance: 90,
-          accessibility: 91,
-          "best-practices": 92,
-          seo: 93,
+  it("handles fetch failure gracefully", async () => {
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = vi.fn().mockRejectedValueOnce(new Error("network error"));
+
+    const fetched = await fetchLighthouseResult(
+      "https://example.com/",
+      "page-1",
+      "desktop",
+      billingCustomer,
+    );
+
+    expect(fetched.result.errorMessage).toBe("Lighthouse requires PAGESPEED_API_KEY.");
+    globalThis.fetch = originalFetch;
+  });
+
+  it("successfully parses PageSpeed API response", async () => {
+    const originalFetch = globalThis.fetch;
+    const originalKey = process.env.GOOGLE_PAGESPEED_API_KEY;
+    process.env.GOOGLE_PAGESPEED_API_KEY = "test-key";
+
+    globalThis.fetch = vi.fn().mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        lighthouseResult: {
+          requestedUrl: "https://example.com/",
+          finalDisplayedUrl: "https://example.com/",
+          categories: {
+            performance: { score: 0.95 },
+            accessibility: { score: 0.9 },
+            "best-practices": { score: 0.88 },
+            seo: { score: 1 },
+          },
+          audits: {
+            "largest-contentful-paint": { numericValue: 1200 },
+            "cumulative-layout-shift": { numericValue: 0.02 },
+            "interaction-to-next-paint": { numericValue: 80 },
+            "server-response-time": { numericValue: 150 },
+          },
         },
-        metrics: {
-          largestContentfulPaint: { numericValue: 1000 },
-          cumulativeLayoutShift: { numericValue: 0.01 },
-          interactionToNextPaint: { numericValue: 100 },
-          serverResponseTime: { numericValue: 200 },
-        },
-      });
-    createDataforseoClientMock.mockReturnValue({
-      lighthouse: { live },
+      }),
     });
 
     const fetched = await fetchLighthouseResult(
@@ -117,7 +131,16 @@ describe("fetchLighthouseResult", () => {
       billingCustomer,
     );
 
-    expect(live).toHaveBeenCalledOnce();
-    expect(fetched.result.errorMessage).toBe("temporary failure");
+    expect(fetched.result.performanceScore).toBe(95);
+    expect(fetched.result.accessibilityScore).toBe(90);
+    expect(fetched.result.bestPracticesScore).toBe(88);
+    expect(fetched.result.seoScore).toBe(100);
+    expect(fetched.result.lcpMs).toBe(1200);
+    expect(fetched.result.cls).toBe(0.02);
+    expect(fetched.payloadJson).toBeDefined();
+
+    globalThis.fetch = originalFetch;
+    process.env.GOOGLE_PAGESPEED_API_KEY = originalKey;
   });
 });
+

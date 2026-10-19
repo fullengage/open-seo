@@ -6,7 +6,7 @@
 
 ## Fase 2 — Dados gratuitos
 - [x] Implementar crawler próprio e incremental (Rastreamento nativo sem DataForSEO, suporte a 304 Not Modified, detecção de mudanças/delta entre auditorias e exibição de problemas corrigidos e novos)
-- [ ] Integrar PageSpeed e Lighthouse
+- [x] Integrar PageSpeed e Lighthouse (Google PageSpeed Insights API v5 conectada com chave do projeto A4IA SaaS, cota de 25k req/dia gratuitas, conversão para StoredLighthousePayload e Card interativo de teste imediato)
 - [ ] Construir análise de oportunidades pelo Search Console
 - [ ] Criar cache compartilhado com isolamento por autorização
 

@@ -1,9 +1,12 @@
 import { detectUrlTemplate, canonicalUrlKey } from "./url-utils";
 import type { BillingCustomerContext } from "@/server/billing/subscription";
-import { createDataforseoClient } from "@/server/lib/dataforseo";
 import type { LighthouseResult, LighthouseStrategy } from "./types";
 import type { PageFetchClass } from "@/shared/audit-fetch-class";
 import { putTextToR2 } from "@/server/lib/r2";
+import {
+  buildStoredPageSpeedPayload,
+  type GooglePageSpeedResponse,
+} from "@/server/lib/pageSpeedPayload";
 
 interface LighthouseSamplePage {
   url: string;
@@ -79,62 +82,38 @@ export async function fetchLighthouseResult(
       });
 
       if (response.ok) {
-        const data = (await response.json()) as {
-          lighthouseResult?: {
-            categories?: {
-              performance?: { score: number | null };
-              accessibility?: { score: number | null };
-              "best-practices"?: { score: number | null };
-              seo?: { score: number | null };
-            };
-            audits?: Record<string, { numericValue?: number | null }>;
-          };
-        };
-
-        const lh = data.lighthouseResult;
-        if (lh?.categories) {
-          const perf =
-            lh.categories.performance?.score != null
-              ? Math.round(lh.categories.performance.score * 100)
-              : null;
-          const a11y =
-            lh.categories.accessibility?.score != null
-              ? Math.round(lh.categories.accessibility.score * 100)
-              : null;
-          const bp =
-            lh.categories["best-practices"]?.score != null
-              ? Math.round(lh.categories["best-practices"].score * 100)
-              : null;
-          const seo =
-            lh.categories.seo?.score != null
-              ? Math.round(lh.categories.seo.score * 100)
-              : null;
-
-          const lcp =
-            lh.audits?.["largest-contentful-paint"]?.numericValue ?? null;
-          const cls =
-            lh.audits?.["cumulative-layout-shift"]?.numericValue ?? null;
-          const inp =
-            lh.audits?.["interaction-to-next-paint"]?.numericValue ?? null;
-          const ttfb =
-            lh.audits?.["server-response-time"]?.numericValue ?? null;
+        const data = (await response.json()) as GooglePageSpeedResponse;
+        try {
+          const storedPayload = buildStoredPageSpeedPayload({
+            url,
+            strategy,
+            response: data,
+          });
 
           return {
             result: {
               url,
               pageId,
               strategy,
-              performanceScore: perf,
-              accessibilityScore: a11y,
-              bestPracticesScore: bp,
-              seoScore: seo,
-              lcpMs: lcp,
-              cls,
-              inpMs: inp,
-              ttfbMs: ttfb,
+              performanceScore: storedPayload.scores.performance,
+              accessibilityScore: storedPayload.scores.accessibility,
+              bestPracticesScore: storedPayload.scores["best-practices"],
+              seoScore: storedPayload.scores.seo,
+              lcpMs:
+                storedPayload.metrics.largestContentfulPaint.numericValue,
+              cls: storedPayload.metrics.cumulativeLayoutShift.numericValue,
+              inpMs:
+                storedPayload.metrics.interactionToNextPaint.numericValue,
+              ttfbMs:
+                storedPayload.metrics.serverResponseTime.numericValue,
             },
-            payloadJson: JSON.stringify(data),
+            payloadJson: JSON.stringify(storedPayload),
           };
+        } catch (parseErr) {
+          console.warn(
+            `[PageSpeed API] Failed to parse payload for ${url}:`,
+            parseErr,
+          );
         }
       }
     } catch (err) {
