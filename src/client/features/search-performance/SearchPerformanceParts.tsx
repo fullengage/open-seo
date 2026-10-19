@@ -48,7 +48,7 @@ function strikingExportTable(report: Report): ExportTable {
   return {
     filename: `search-performance-striking-distance-${stamp}`,
     headers: ["Query", "Page", "Impressions", "Clicks", "Position"],
-    rows: report.strikingDistance.map((row) => [
+    rows: (report.strikingDistance ?? []).map((row) => [
       row.query,
       row.page,
       row.impressions,
@@ -256,7 +256,7 @@ export function StrikingDistanceTable({
   const [rowSelection, setRowSelection] = useState({});
   const columns = useMemo(() => buildStrikingColumns(anchorRef), [anchorRef]);
   const table = useDataTable({
-    data: rows,
+    data: rows ?? [],
     columns,
     withSorting: true,
     withPagination: true,
@@ -343,7 +343,7 @@ export function StrikingDistanceTable({
           }
         />
       </div>
-      {!isPastEnd && rows.length > 0 && (
+      {!isPastEnd && (rows?.length ?? 0) > 0 && (
         <TablePagination
           page={page}
           pageSize={pageSize}

@@ -277,7 +277,7 @@ export function SearchPerformancePage({
                 <TabsTrigger value="striking">
                   {reportQuery.isPlaceholderData
                     ? "Striking distance"
-                    : `Striking distance (${report.strikingDistance.length})`}
+                    : `Striking distance (${report.strikingDistance?.length ?? 0})`}
                 </TabsTrigger>
                 <TabsTrigger value="queries">Queries</TabsTrigger>
                 <TabsTrigger value="pages">Pages</TabsTrigger>
@@ -303,7 +303,7 @@ export function SearchPerformancePage({
                 ) : null}
                 <SearchPerformanceSelects
                   search={search}
-                  countries={report.countries}
+                  countries={report.countries ?? []}
                   onSearchChange={onSearchChange}
                 />
               </div>
@@ -316,7 +316,7 @@ export function SearchPerformancePage({
               ) : tab === "striking" ? (
                 <StrikingDistanceTable
                   projectId={projectId}
-                  rows={report.strikingDistance}
+                  rows={report.strikingDistance ?? []}
                   page={page}
                   pageSize={pageSize}
                   onPageChange={(nextPage) =>
