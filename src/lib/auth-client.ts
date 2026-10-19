@@ -27,16 +27,7 @@ export function signOutAndRedirect() {
   captureClientEvent("auth:sign_out");
   resetAnalyticsUser();
 
-  // 1. Invalidate HTTP Basic Auth credentials in browser if present
-  try {
-    const xhr = new XMLHttpRequest();
-    xhr.open("GET", "/logout-basic-auth", true, "logout", "logout");
-    xhr.send();
-  } catch {
-    // Ignore error
-  }
-
-  // 2. Clear Better Auth / local session
+  // Clear Better Auth / local session
   void authClient.signOut({
     fetchOptions: {
       onSuccess: () => {
@@ -48,7 +39,7 @@ export function signOutAndRedirect() {
     },
   });
 
-  // 3. Fallback guarantee to navigate to sign-in page
+  // Fallback guarantee to navigate to sign-in page
   setTimeout(() => {
     window.location.href = "/sign-in";
   }, 800);

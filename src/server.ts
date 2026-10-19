@@ -152,17 +152,6 @@ function handleFetch(
     );
   }
 
-  if (pathname === "/logout-basic-auth") {
-    return new Response("Signed out", {
-      status: 401,
-      headers: {
-        "WWW-Authenticate": 'Basic realm="traefik"',
-        "Set-Cookie":
-          "openseo_signed_out=true; Path=/; SameSite=Lax; Max-Age=86400; HttpOnly",
-      },
-    });
-  }
-
   if (pathname === GDPR_STORAGE_ERASURE_PATH) {
     return handleGdprStorageErasure(publicRequest, env);
   }

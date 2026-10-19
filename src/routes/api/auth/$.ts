@@ -46,6 +46,25 @@ async function handleAuthRequest(request: Request) {
       url.pathname.endsWith("/sign-in/email") ||
       url.pathname.endsWith("/sign-in/local")
     ) {
+      let bodyPassword = "";
+      try {
+        const body = (await request.json()) as { password?: string };
+        bodyPassword = body?.password || "";
+      } catch {
+        // empty body
+      }
+
+      const configuredPassword =
+        (Reflect.get(env, "ADMIN_PASSWORD") as string | undefined) ||
+        "Fla@30041975Wa02";
+
+      if (bodyPassword && configuredPassword && bodyPassword !== configuredPassword) {
+        return Response.json(
+          { error: { message: "Senha incorreta. Verifique e tente novamente." } },
+          { status: 401 },
+        );
+      }
+
       return new Response(
         JSON.stringify({
           user: {

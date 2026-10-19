@@ -133,28 +133,7 @@ function SignInPage() {
       }
     >
       {!isHostedMode ? (
-        <div className="space-y-4 py-2 text-center">
-          <p className="text-sm text-foreground/70">
-            Sua sessão foi encerrada. Clique no botão abaixo para entrar novamente no OpenSEO.
-          </p>
-          <Button
-            type="button"
-            className="w-full h-10 font-medium"
-            variant="default"
-            onClick={async () => {
-              try {
-                await fetch("/api/auth/sign-in/local", {
-                  method: "POST",
-                });
-              } catch {
-                // Ignore error
-              }
-              window.location.href = redirectTo || "/";
-            }}
-          >
-            Entrar no OpenSEO
-          </Button>
-        </div>
+        <LocalSignInForm redirectTo={redirectTo} />
       ) : !showEmailForm ? (
         <>
           <AuthMethodChooser
@@ -234,3 +213,69 @@ function SignInPage() {
     </AuthPageCard>
   );
 }
+
+function LocalSignInForm({ redirectTo }: { redirectTo: string }) {
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+    try {
+      const res = await fetch("/api/auth/sign-in/local", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password }),
+      });
+      const data = (await res.json()) as { error?: { message?: string } };
+      if (!res.ok || data.error) {
+        setError(data.error?.message || "Senha incorreta.");
+        setLoading(false);
+        return;
+      }
+      window.location.href = redirectTo || "/";
+    } catch {
+      setError("Erro ao autenticar. Tente novamente.");
+      setLoading(false);
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="space-y-1.5 text-left">
+        <label className="text-xs font-medium text-foreground/80">Usuário</label>
+        <input
+          type="text"
+          value="admin@localhost"
+          disabled
+          className="w-full rounded-md border border-input bg-muted px-3 py-2 text-sm text-muted-foreground"
+        />
+      </div>
+      <div className="space-y-1.5 text-left">
+        <label className="text-xs font-medium text-foreground/80">Senha</label>
+        <input
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder="Digite sua senha..."
+          autoFocus
+          className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+        />
+      </div>
+      {error ? (
+        <p className="text-sm font-medium text-destructive">{error}</p>
+      ) : null}
+      <Button
+        type="submit"
+        className="w-full h-10 font-medium"
+        variant="default"
+        pending={loading}
+      >
+        {loading ? "Entrando..." : "Entrar no OpenSEO"}
+      </Button>
+    </form>
+  );
+}
+
