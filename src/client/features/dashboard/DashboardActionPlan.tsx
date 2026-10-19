@@ -2,9 +2,12 @@ import * as React from "react";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getSeoActionPlan, type ActionPlanItem } from "@/serverFunctions/actionPlan";
+import { googleConnectionOptions } from "@/client/features/integrations/googleProviders";
+import { startGoogleLink, useGoogleLinkPending } from "@/client/features/integrations/startGoogleLink";
 import { Badge } from "@/client/components/ui/badge";
 import { Button } from "@/client/components/ui/button";
 import { Skeleton } from "@/client/components/ui/skeleton";
+import { GoogleGlyph } from "@/client/features/gsc/GoogleGlyph";
 import {
   TrendingUp,
   Zap,
@@ -14,15 +17,26 @@ import {
   Search,
   Sparkles,
   CheckCircle2,
+  ShieldCheck,
+  Compass,
+  Building2,
+  Send,
+  Kanban,
+  Check,
+  Loader2,
 } from "lucide-react";
 
 export function DashboardActionPlan({ projectId }: { projectId: string }) {
   const [filter, setFilter] = useState<"all" | "high" | "striking" | "technical">("all");
+  const linking = useGoogleLinkPending();
 
   const query = useQuery({
     queryKey: ["seoActionPlan", projectId],
     queryFn: () => getSeoActionPlan({ data: { projectId } }),
   });
+
+  const gscConnectionQuery = useQuery(googleConnectionOptions("gsc", projectId));
+  const gscConnected = Boolean(gscConnectionQuery.data?.connected);
 
   if (query.isPending) {
     return (
@@ -65,7 +79,33 @@ export function DashboardActionPlan({ projectId }: { projectId: string }) {
   });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
+      {/* Onboarding Autônomo do Search Console (Caso não conectado) */}
+      {!gscConnected && (
+        <div className="rounded-xl border-2 border-primary/40 bg-primary/5 p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <GoogleGlyph className="size-5" />
+              <h3 className="font-bold text-base text-foreground">
+                Conecte seu Google Search Console em 1 Clique (Onboarding Autônomo)
+              </h3>
+            </div>
+            <p className="text-xs text-muted-foreground max-w-2xl leading-relaxed">
+              Conecte sua conta do Google com apenas um clique. O sistema detecta e vincula a propriedade do seu domínio automaticamente, ativando a análise de Striking Distance e estimativa de ganhos mensais de tráfego.
+            </p>
+          </div>
+
+          <Button
+            onClick={() => void startGoogleLink("gsc", window.location.href)}
+            disabled={linking}
+            className="gap-2 shrink-0 font-semibold shadow-sm"
+          >
+            {linking ? <Loader2 className="size-4 animate-spin" /> : <GoogleGlyph className="size-4" />}
+            {linking ? "Conectando ao Google..." : "Conectar Search Console Sozinho"}
+          </Button>
+        </div>
+      )}
+
       {/* Summary KPI Cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div className="rounded-xl border border-border/70 bg-card p-4 shadow-sm">
@@ -99,11 +139,11 @@ export function DashboardActionPlan({ projectId }: { projectId: string }) {
             <span className="text-xs font-semibold uppercase tracking-wider">Ações Prioritárias</span>
             <AlertCircle className="size-4 text-rose-500" />
           </div>
-          <div className="mt-2 text-2xl font-bold text-rose-600">
+          <div className="mt-2 text-2xl font-bold text-foreground">
             {summary.highPriorityCount}
           </div>
           <p className="mt-1 text-xs text-muted-foreground">
-            Tarefas de impacto imediato
+            Ações com maior retorno sobre o esforço
           </p>
         </div>
 
@@ -113,17 +153,17 @@ export function DashboardActionPlan({ projectId }: { projectId: string }) {
             <CheckCircle2 className="size-4 text-blue-500" />
           </div>
           <div className="mt-2 text-2xl font-bold text-foreground">
-            {summary.siteHealthScore != null ? `${summary.siteHealthScore}%` : "100%"}
+            {summary.siteHealthScore != null ? `${summary.siteHealthScore}%` : "—"}
           </div>
           <p className="mt-1 text-xs text-muted-foreground">
-            Score técnico do último crawl
+            Pontuação de integridade do crawler nativo
           </p>
         </div>
       </div>
 
       {/* Filter Tabs */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 pb-3">
-        <div className="flex items-center gap-1.5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border pb-3">
+        <div className="flex flex-wrap items-center gap-2">
           <Button
             type="button"
             size="sm"
@@ -179,23 +219,90 @@ export function DashboardActionPlan({ projectId }: { projectId: string }) {
           ))
         )}
       </div>
+
+      {/* Seção: Uma Métrica de Sucesso por Fase do Plano Mestre */}
+      <div className="rounded-xl border border-border bg-card p-5 space-y-4 shadow-xs">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border pb-3">
+          <div>
+            <h3 className="font-bold text-sm text-foreground flex items-center gap-2">
+              <ShieldCheck className="size-4 text-emerald-500" />
+              Métricas de Sucesso por Fase do Projeto (KPIs)
+            </h3>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Cada fase possui uma métrica única e mensurável que comprova o sucesso e o retorno da plataforma.
+            </p>
+          </div>
+          <Badge variant="outline" className="text-emerald-500 border-emerald-500/30 text-xs w-fit">
+            7 de 7 Fases Ativas
+          </Badge>
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="p-3 rounded-lg border bg-muted/20 space-y-1">
+            <span className="text-[10px] uppercase font-bold text-muted-foreground">Fase 1 — Fundação</span>
+            <p className="text-xs font-semibold text-foreground">Conexão Autônoma GSC</p>
+            <p className="text-[11px] text-muted-foreground">
+              Métrica: <b className="text-emerald-500">Tempo de onboarding &lt; 60s</b> (Zero suporte manual).
+            </p>
+          </div>
+
+          <div className="p-3 rounded-lg border bg-muted/20 space-y-1">
+            <span className="text-[10px] uppercase font-bold text-muted-foreground">Fase 2 — Dados Gratuitos</span>
+            <p className="text-xs font-semibold text-foreground">Custo Operacional de APIs</p>
+            <p className="text-[11px] text-muted-foreground">
+              Métrica: <b className="text-emerald-500">R$ 0,00/mês</b> (PageSpeed 25k/dia + Crawler local).
+            </p>
+          </div>
+
+          <div className="p-3 rounded-lg border bg-muted/20 space-y-1">
+            <span className="text-[10px] uppercase font-bold text-muted-foreground">Fase 3 — SEO Local & Oportunidades</span>
+            <p className="text-xs font-semibold text-foreground">Potencial de Tráfego Identificado</p>
+            <p className="text-[11px] text-muted-foreground">
+              Métrica: <b className="text-emerald-500">+{summary.estimatedClicksMonthly} cliques/mês</b> em Striking Distance.
+            </p>
+          </div>
+
+          <div className="p-3 rounded-lg border bg-muted/20 space-y-1">
+            <span className="text-[10px] uppercase font-bold text-muted-foreground">Fase 4 — Inteligência B2B</span>
+            <p className="text-xs font-semibold text-foreground">Taxa de Decisores no QSA</p>
+            <p className="text-[11px] text-muted-foreground">
+              Métrica: <b className="text-emerald-500">100% dos sócios</b> mapeados na Receita Federal.
+            </p>
+          </div>
+
+          <div className="p-3 rounded-lg border bg-muted/20 space-y-1">
+            <span className="text-[10px] uppercase font-bold text-muted-foreground">Fase 5 — Abordagem Anti-Clay</span>
+            <p className="text-xs font-semibold text-foreground">Velocidade de Geração de Copy</p>
+            <p className="text-[11px] text-muted-foreground">
+              Métrica: <b className="text-emerald-500">&lt; 3 segundos</b> por e-mail e pitch de vendas.
+            </p>
+          </div>
+
+          <div className="p-3 rounded-lg border bg-muted/20 space-y-1">
+            <span className="text-[10px] uppercase font-bold text-muted-foreground">Fase 6 — Demanda & Pipeline</span>
+            <p className="text-xs font-semibold text-foreground">Funil Comercial Kanban</p>
+            <p className="text-[11px] text-muted-foreground">
+              Métrica: <b className="text-emerald-500">5 etapas de conversão</b> ativas e persistentes.
+            </p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
 
 function ActionPlanCard({ item }: { item: ActionPlanItem }) {
-  const priorityBadge = {
-    high: "bg-rose-500/10 text-rose-600 border-rose-500/20",
-    medium: "bg-amber-500/10 text-amber-600 border-amber-500/20",
-    low: "bg-blue-500/10 text-blue-600 border-blue-500/20",
-  }[item.priority];
+  const priorityBadge =
+    item.priority === "high"
+      ? "bg-rose-500/10 text-rose-600 border-rose-500/30"
+      : "bg-amber-500/10 text-amber-600 border-amber-500/30";
 
-  const categoryLabel = {
-    striking_distance: "Ganhos Rápidos",
-    ctr_boost: "Otimização de CTR",
-    technical: "Técnico",
-    core_web_vitals: "Velocidade",
-  }[item.category];
+  const categoryLabel =
+    item.category === "striking_distance"
+      ? "Ganho Rápido (Posições 4–8)"
+      : item.category === "ctr_boost"
+      ? "Otimização de CTR"
+      : "Correção Técnica";
 
   return (
     <div className="rounded-xl border border-border bg-card p-5 shadow-sm transition hover:border-primary/40">

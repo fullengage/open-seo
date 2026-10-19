@@ -9,6 +9,7 @@ import { Spinner } from "@/client/components/Spinner";
 import { Button } from "@/client/components/ui/button";
 import { Input } from "@/client/components/ui/input";
 import {
+  useEffect,
   useId,
   useRef,
   useState,
@@ -93,6 +94,24 @@ export function GooglePropertyPicker({
     !selectedAccount?.unavailable &&
     !loading &&
     !error;
+
+  useEffect(() => {
+    if (!selection && !loading && !error && accounts.length > 0) {
+      const allSelectable: GooglePickerSelection[] = [];
+      for (const account of accounts) {
+        if (!account.requiresReconnect && !account.unavailable) {
+          for (const prop of account.properties) {
+            if (prop.selectable) {
+              allSelectable.push({ accountId: account.accountId, propertyId: prop.id });
+            }
+          }
+        }
+      }
+      if (allSelectable.length === 1) {
+        onSelect(allSelectable[0]);
+      }
+    }
+  }, [accounts, selection, loading, error, onSelect]);
   const emptyGsc =
     provider === "gsc" && hasNoGscWebsites(accounts, loading, error);
   const query = search.trim().toLowerCase();
