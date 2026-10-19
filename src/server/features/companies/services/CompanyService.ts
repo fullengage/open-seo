@@ -79,4 +79,111 @@ export const CompanyService = {
     }
     return [];
   },
+
+  async inspectWebsiteFacts(url: string, companyName: string) {
+    const formattedUrl = url.startsWith("http") ? url : `https://${url}`;
+    const nowIso = new Date().toISOString();
+    const facts: any[] = [];
+
+    try {
+      const response = await fetch(formattedUrl, {
+        headers: {
+          "User-Agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+          Accept: "text/html,application/xhtml+xml",
+        },
+        signal: AbortSignal.timeout(6000),
+      });
+
+      if (response.ok) {
+        const html = await response.text();
+
+        // 1. Meta Description
+        const descMatch =
+          html.match(/<meta\s+[^>]*name=["']description["'][^>]*content=["']([^"']*)["']/i) ||
+          html.match(/<meta\s+[^>]*content=["']([^"']*)["'][^>]*name=["']description["']/i);
+        const metaDesc = descMatch ? descMatch[1].trim() : "";
+
+        if (!metaDesc) {
+          facts.push({
+            id: `fact-desc-${Date.now()}`,
+            type: "no_meta_description",
+            category: "negative",
+            source: "Crawler",
+            date: nowIso,
+            phrase: `Quando alguém procura ${companyName}, o Google mostra como descrição um trecho aleatório da página, porque o site não tem uma descrição própria.`,
+          });
+        }
+
+        // 2. H1
+        const h1Match = html.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i);
+        if (!h1Match) {
+          facts.push({
+            id: `fact-h1-${Date.now()}`,
+            type: "generic_or_missing_h1",
+            category: "negative",
+            source: "Crawler",
+            date: nowIso,
+            phrase: `A página inicial não tem um título principal definindo o que a empresa faz.`,
+          });
+        } else {
+          const h1Text = h1Match[1].replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim();
+          const lowerH1 = h1Text.toLowerCase();
+          const genericTerms = ["home", "início", "inicio", "bem-vindo", "bem vindo", companyName.toLowerCase()];
+          if (h1Text.length < 4 || genericTerms.includes(lowerH1)) {
+            facts.push({
+              id: `fact-h1-${Date.now()}`,
+              type: "generic_or_missing_h1",
+              category: "negative",
+              source: "Crawler",
+              date: nowIso,
+              value: h1Text,
+              phrase: `O título principal da página inicial é "${h1Text}", que não diz o que a empresa faz.`,
+            });
+          }
+        }
+
+        // 3. Anos antigos no texto (ano atual - 3 = 2026 - 3 = 2023 ou menor)
+        const textOnly = html
+          .replace(/<script[\s\S]*?<\/script>/gi, "")
+          .replace(/<style[\s\S]*?<\/style>/gi, "")
+          .replace(/<[^>]*>/g, " ");
+
+        const yearMatches = textOnly.match(/\b(201[5-9]|202[0-3])\b/g);
+        if (yearMatches && yearMatches.length > 0) {
+          const uniqueYears = Array.from(new Set(yearMatches)).sort();
+          facts.push({
+            id: `fact-year-${Date.now()}`,
+            type: "outdated_year",
+            category: "negative",
+            source: "Crawler",
+            date: nowIso,
+            value: uniqueYears.slice(0, 2).join("/"),
+            phrase: `O conteúdo da página inicial ainda fala de ${uniqueYears.slice(0, 2).join("/")}.`,
+          });
+        }
+
+        // 4. Sem dados estruturados
+        const hasSchema = /<script[^>]*type=["']application\/ld\+json["']/i.test(html);
+        if (!hasSchema) {
+          facts.push({
+            id: `fact-schema-${Date.now()}`,
+            type: "no_structured_data",
+            category: "diagnostic_only",
+            source: "Crawler",
+            date: nowIso,
+            phrase: `Sem dados estruturados Schema.org.`,
+          });
+        }
+      }
+    } catch {
+      // Ignora falha de crawl da URL
+    }
+
+    return {
+      crawledAt: nowIso,
+      websiteUrl: formattedUrl,
+      facts,
+    };
+  },
 };

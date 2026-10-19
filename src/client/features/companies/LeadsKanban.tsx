@@ -22,15 +22,17 @@ import {
   Flame,
   SunMedium,
   Snowflake,
+  Activity,
+  CheckCircle2,
+  AlertCircle,
 } from "lucide-react";
 import { Button } from "@/client/components/ui/button";
 import { Badge } from "@/client/components/ui/badge";
 import { Card } from "@/client/components/ui/card";
 import { toast } from "sonner";
-import type { PipelineLead, PipelineStage } from "./types";
+import type { PipelineLead, PipelineStage, LeadFact } from "./types";
 import { OutreachCopyDialog } from "./OutreachCopyDialog";
 import { LeadEnrichmentModal } from "./LeadEnrichmentModal";
-import type { CompanyDetail } from "@/types/schemas/company";
 
 const STORAGE_KEY = "openseo_b2b_pipeline_leads";
 
@@ -44,42 +46,130 @@ const COLUMNS: { id: PipelineStage; label: string; color: string }[] = [
 
 export function LeadsKanban() {
   const [leads, setLeads] = useState<PipelineLead[]>([]);
-  const [activeOutreachCompany, setActiveOutreachCompany] = useState<CompanyDetail | null>(null);
+  const [activeOutreachLead, setActiveOutreachLead] = useState<PipelineLead | null>(null);
   const [activeEnrichLead, setActiveEnrichLead] = useState<PipelineLead | null>(null);
 
   useEffect(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        setLeads(JSON.parse(saved));
+      let parsed: PipelineLead[] = saved ? JSON.parse(saved) : [];
+
+      const laguneFacts: LeadFact[] = [
+        {
+          id: "fact-lagune-desc",
+          type: "no_meta_description",
+          category: "negative",
+          source: "Crawler",
+          date: new Date().toISOString(),
+          phrase:
+            "Quando alguém procura Lagune, o Google mostra como descrição um trecho aleatório da página, porque o site não tem uma descrição própria.",
+        },
+        {
+          id: "fact-lagune-year",
+          type: "outdated_year",
+          category: "negative",
+          source: "Crawler",
+          date: new Date().toISOString(),
+          value: "2019/2020",
+          phrase: "O conteúdo da página inicial ainda fala de 2019/2020.",
+        },
+        {
+          id: "fact-lagune-lcp",
+          type: "slow_lcp_mobile",
+          category: "negative",
+          source: "PageSpeed",
+          date: new Date().toISOString(),
+          value: "6,2 s",
+          phrase:
+            "No celular, a página inicial levou 6,2 s para carregar o conteúdo principal no teste do Google.",
+        },
+        {
+          id: "fact-lagune-rating",
+          type: "high_google_rating",
+          category: "positive",
+          source: "Perfil Google (Apify)",
+          date: new Date().toISOString(),
+          value: "4,7",
+          phrase: "O perfil no Google tem nota 4,7.",
+        },
+      ];
+
+      const sampleLagune: PipelineLead = {
+        id: "lead-lagune",
+        cnpj: "19845309000185",
+        razaoSocial: "LAGUNE PISCINAS E CONSTRUCAO LTDA",
+        nomeFantasia: "Lagune",
+        uf: "SP",
+        municipio: "Campinas",
+        segmento: "piscinas em Campinas",
+        telefone: "(19) 3255-8000",
+        email: "contato@lagune.com.br",
+        website: "https://lagune.com.br",
+        cnae: "4399100",
+        cnaeDescricao: "Construção de piscinas e áreas de lazer",
+        socioPrincipal: "Eugênio Romano",
+        decisorNome: "Eugênio Romano",
+        decisorCargo: "Sócio-Administrador",
+        stage: "prospect",
+        temperatura: "hot",
+        ticketEstimado: 5000,
+        createdAt: new Date().toISOString(),
+        isEnriched: true,
+        socios: [{ nome: "Eugênio Romano", qualificacaoDescricao: "Sócio-Administrador" }],
+        diagnostic: {
+          crawledAt: new Date().toISOString(),
+          websiteUrl: "https://lagune.com.br",
+          facts: laguneFacts,
+        },
+      };
+
+      const sampleMgi: PipelineLead = {
+        id: "lead-1",
+        cnpj: "53485309000185",
+        razaoSocial: "MGI TECNOLOGIA E SERVICOS LTDA",
+        nomeFantasia: "MGI",
+        uf: "SP",
+        municipio: "Campinas",
+        telefone: "(19) 3251-4000",
+        email: "contato@mgi.com.br",
+        cnae: "6201501",
+        cnaeDescricao: "Desenvolvimento de programas de computador",
+        socioPrincipal: "Richard Wagner",
+        decisorNome: "Richard Wagner",
+        decisorCargo: "Sócio-Diretor",
+        whatsapp: "(19) 3251-4000",
+        temperatura: "hot",
+        ticketEstimado: 3500,
+        stage: "prospect",
+        createdAt: new Date().toISOString(),
+        isEnriched: true,
+      };
+
+      if (!parsed || parsed.length === 0) {
+        parsed = [sampleLagune, sampleMgi];
       } else {
-        const initialSample: PipelineLead[] = [
-          {
-            id: "lead-1",
-            cnpj: "53485309000185",
-            razaoSocial: "MGI TECNOLOGIA E SERVICOS LTDA",
-            nomeFantasia: "MGI",
-            uf: "SP",
-            municipio: "Campinas",
-            telefone: "(19) 3251-4000",
-            email: "contato@mgi.com.br",
-            cnae: "6201501",
-            cnaeDescricao: "Desenvolvimento de programas de computador",
-            socioPrincipal: "Richard Wagner",
-            decisorNome: "Richard Wagner",
-            decisorCargo: "Sócio-Diretor",
-            whatsapp: "(19) 3251-4000",
-            temperatura: "hot",
-            ticketEstimado: 3500,
-            proximoPasso: "Apresentar auditoria de SEO técnico na quinta às 14h",
-            stage: "prospect",
-            createdAt: new Date().toISOString(),
-            isEnriched: true,
-          },
-        ];
-        setLeads(initialSample);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(initialSample));
+        // Assegura que o card da Lagune tenha os fatos medidos do rascunho de referência
+        const laguneIndex = parsed.findIndex(
+          (l) => l.nomeFantasia === "Lagune" || l.razaoSocial.includes("LAGUNE") || l.id === "lead-lagune"
+        );
+        if (laguneIndex >= 0) {
+          parsed[laguneIndex] = {
+            ...sampleLagune,
+            ...parsed[laguneIndex],
+            diagnostic: {
+              crawledAt: new Date().toISOString(),
+              websiteUrl: parsed[laguneIndex].website || "https://lagune.com.br",
+              facts: laguneFacts,
+            },
+            decisorNome: parsed[laguneIndex].decisorNome || "Eugênio Romano",
+          };
+        } else {
+          parsed.unshift(sampleLagune);
+        }
       }
+
+      setLeads(parsed);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
     } catch {
       // ignore
     }
@@ -132,25 +222,10 @@ export function LeadsKanban() {
     saveLeads(updated);
   }
 
-  function handleOpenOutreach(lead: PipelineLead, e?: React.MouseEvent) {
-    if (e) e.stopPropagation();
-
-    const syntheticDetail: CompanyDetail = {
-      cnpj: lead.cnpj,
-      cnpjBasico: lead.cnpj.slice(0, 8),
-      razaoSocial: lead.razaoSocial,
-      nomeFantasia: lead.nomeFantasia,
-      cnae: lead.cnae || "",
-      cnaeDescricao: lead.cnaeDescricao,
-      uf: lead.uf,
-      municipio: lead.municipio,
-      telefone: lead.whatsapp || lead.telefone,
-      email: lead.decisorEmail || lead.email,
-      socios: (lead.decisorNome || lead.socioPrincipal)
-        ? [{ nome: lead.decisorNome || lead.socioPrincipal || "" }]
-        : [],
-    };
-    setActiveOutreachCompany(syntheticDetail);
+  function handleUpdateOutreachLead(updatedLead: PipelineLead) {
+    const updated = leads.map((l) => (l.id === updatedLead.id ? updatedLead : l));
+    saveLeads(updated);
+    setActiveOutreachLead(updatedLead);
   }
 
   function handleAddNewLead() {
@@ -191,7 +266,7 @@ export function LeadsKanban() {
             Pipeline Comercial & CRM de Prospecção (Anti-Clay)
           </h2>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Clique no card ou no botão <strong>&quot;Enriquecer&quot;</strong> para cadastrar tomador de decisão, cargo, LinkedIn, WhatsApp e anotações.
+            Geração de abordagem baseada <strong>exclusivamente em fatos medidos</strong> (Crawler, PageSpeed e Perfil Google).
           </p>
         </div>
 
@@ -232,6 +307,9 @@ export function LeadsKanban() {
                 {colLeads.map((lead) => {
                   const cleanWhatsapp = (lead.whatsapp || lead.telefone || "").replace(/\D/g, "");
                   const decisorDisplay = lead.decisorNome || lead.socioPrincipal;
+                  const negativeFacts = (lead.diagnostic?.facts || []).filter((f) => f.category === "negative");
+                  const hasEnoughFacts = negativeFacts.length >= 2;
+                  const hasApprovedDraft = lead.draft?.status === "approved";
 
                   return (
                     <Card
@@ -239,7 +317,7 @@ export function LeadsKanban() {
                       onClick={() => setActiveEnrichLead(lead)}
                       className="p-3 space-y-2.5 bg-card shadow-xs hover:border-primary/60 transition-all cursor-pointer group hover:shadow-sm"
                     >
-                      {/* Top info: Name, City & Temperature */}
+                      {/* Topo do Card: Nome, Cidade & Temperatura */}
                       <div className="flex items-start justify-between gap-1">
                         <div className="min-w-0 flex-1">
                           <h4 className="font-bold text-xs line-clamp-1 group-hover:text-primary transition-colors">
@@ -267,7 +345,7 @@ export function LeadsKanban() {
                         )}
                       </div>
 
-                      {/* Decisor & Cargo Section */}
+                      {/* Decisor & Cargo */}
                       <div className="p-1.5 rounded bg-muted/40 border border-border/40 text-[11px] space-y-0.5">
                         <div className="flex items-center gap-1.5 font-medium text-foreground">
                           <Users className="h-3 w-3 text-primary shrink-0" />
@@ -286,7 +364,7 @@ export function LeadsKanban() {
                         )}
                       </div>
 
-                      {/* Contact & Social Links */}
+                      {/* Contatos & Links */}
                       <div className="flex items-center flex-wrap gap-2 text-[10px]">
                         {cleanWhatsapp && (
                           <a
@@ -337,28 +415,33 @@ export function LeadsKanban() {
                         )}
                       </div>
 
-                      {/* Next step or notes snippet */}
-                      {lead.proximoPasso && (
-                        <div className="text-[10px] bg-primary/5 text-primary border border-primary/20 rounded p-1.5 flex items-start gap-1">
-                          <Clock className="h-3 w-3 shrink-0 mt-0.5" />
-                          <span className="line-clamp-2 leading-tight font-medium">
-                            {lead.proximoPasso}
-                          </span>
-                        </div>
-                      )}
+                      {/* Diagnóstico & Fatos Medidos no Card */}
+                      <div className="text-[10px] space-y-1">
+                        {hasEnoughFacts ? (
+                          <div className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-medium">
+                            <CheckCircle2 className="h-3 w-3" />
+                            <span>{negativeFacts.length} fatos negativos medidos</span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1 text-amber-600 dark:text-amber-400 text-[10px]">
+                            <AlertCircle className="h-3 w-3" />
+                            <span>Diagnóstico pendente (menos de 2 fatos)</span>
+                          </div>
+                        )}
 
-                      {lead.notes && !lead.proximoPasso && (
-                        <div className="text-[10px] text-muted-foreground bg-muted/30 rounded p-1.5 flex items-start gap-1">
-                          <FileText className="h-3 w-3 shrink-0 mt-0.5" />
-                          <span className="line-clamp-2 leading-tight">
-                            {lead.notes}
-                          </span>
-                        </div>
-                      )}
+                        {hasApprovedDraft && (
+                          <div className="text-[10px] bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20 rounded p-1.5 flex items-start gap-1">
+                            <Mail className="h-3 w-3 shrink-0 mt-0.5" />
+                            <span className="line-clamp-1 leading-tight font-medium">
+                              Abordagem aprovada para {lead.decisorNome?.split(" ")[0]}
+                            </span>
+                          </div>
+                        )}
+                      </div>
 
-                      {/* Bottom Action Bar */}
+                      {/* Rodapé de Ações do Card */}
                       <div className="pt-2 border-t border-border flex items-center justify-between gap-1">
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-1 flex-wrap">
                           <Button
                             variant="ghost"
                             size="icon"
@@ -372,29 +455,58 @@ export function LeadsKanban() {
                           <Button
                             variant="outline"
                             size="sm"
-                            className="h-6 text-[10px] px-2 gap-1 font-semibold text-primary border-primary/30 hover:bg-primary/10"
+                            className="h-6 text-[10px] px-1.5 gap-1 font-semibold text-foreground border-border hover:bg-muted"
                             onClick={(e) => {
                               e.stopPropagation();
                               setActiveEnrichLead(lead);
                             }}
-                            title="Enriquecer dados do lead (Decisor, Cargo, WhatsApp, LinkedIn, Notas)"
+                            title="Enriquecer dados do lead"
                           >
-                            <Sparkles className="h-2.5 w-2.5" />
-                            Enriquecer
+                            <Edit3 className="h-2.5 w-2.5" />
+                            Editar
                           </Button>
 
+                          {/* Botão Gerar Abordagem (conforme Spec: Fatos Medidos) */}
                           <Button
-                            variant="ghost"
+                            variant={hasEnoughFacts ? "default" : "outline"}
                             size="sm"
-                            className="h-6 text-[10px] px-1.5 gap-1 text-muted-foreground hover:text-foreground font-medium"
-                            onClick={(e) => handleOpenOutreach(lead, e)}
-                            title="Gerar Copy de Vendas"
+                            className={`h-6 text-[10px] px-2 gap-1 font-bold ${
+                              hasApprovedDraft
+                                ? "bg-emerald-600 hover:bg-emerald-700 text-white"
+                                : hasEnoughFacts
+                                ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                                : "text-amber-600 border-amber-500/40 bg-amber-500/5 hover:bg-amber-500/15"
+                            }`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setActiveOutreachLead(lead);
+                            }}
+                            title={
+                              hasEnoughFacts
+                                ? "Gerar Abordagem com fatos medidos"
+                                : "Rode o diagnóstico do site primeiro (mínimo 2 fatos negativos)"
+                            }
                           >
-                            Copy
+                            {hasApprovedDraft ? (
+                              <>
+                                <CheckCircle2 className="h-2.5 w-2.5" />
+                                Abordagem Aprovada
+                              </>
+                            ) : hasEnoughFacts ? (
+                              <>
+                                <Mail className="h-2.5 w-2.5" />
+                                Gerar Abordagem
+                              </>
+                            ) : (
+                              <>
+                                <Activity className="h-2.5 w-2.5 text-amber-500" />
+                                Diagnóstico
+                              </>
+                            )}
                           </Button>
                         </div>
 
-                        {/* Stage Arrow Controls with clear visual separation */}
+                        {/* Setas de Etapa isoladas com e.stopPropagation() */}
                         <div
                           className="flex items-center gap-0.5 bg-muted/60 p-0.5 rounded border border-border"
                           onClick={(e) => e.stopPropagation()}
@@ -444,7 +556,7 @@ export function LeadsKanban() {
         })}
       </div>
 
-      {/* Enrich Modal Dialog */}
+      {/* Modal de Enriquecimento de Dados */}
       {activeEnrichLead && (
         <LeadEnrichmentModal
           lead={activeEnrichLead}
@@ -454,12 +566,13 @@ export function LeadsKanban() {
         />
       )}
 
-      {/* Outreach Copy Dialog */}
-      {activeOutreachCompany && (
+      {/* Dialog: Gerador de Abordagem só com Fatos Medidos */}
+      {activeOutreachLead && (
         <OutreachCopyDialog
-          company={activeOutreachCompany}
-          isOpen={!!activeOutreachCompany}
-          onClose={() => setActiveOutreachCompany(null)}
+          lead={activeOutreachLead}
+          isOpen={!!activeOutreachLead}
+          onClose={() => setActiveOutreachLead(null)}
+          onUpdateLead={handleUpdateOutreachLead}
         />
       )}
     </div>

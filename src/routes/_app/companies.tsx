@@ -484,9 +484,40 @@ export function CompaniesPage() {
 
       {outreachCompany && (
         <OutreachCopyDialog
-          company={outreachCompany}
+          lead={{
+            id: `lead-tmp-${outreachCompany.cnpj}`,
+            cnpj: outreachCompany.cnpj,
+            razaoSocial: outreachCompany.razaoSocial,
+            nomeFantasia: outreachCompany.nomeFantasia,
+            uf: outreachCompany.uf,
+            municipio: outreachCompany.municipio,
+            telefone: outreachCompany.telefone,
+            email: outreachCompany.email,
+            cnae: outreachCompany.cnae,
+            cnaeDescricao: outreachCompany.cnaeDescricao,
+            socios: outreachCompany.socios?.map((s) => ({
+              nome: s.nome,
+              qualificacaoDescricao: s.qualificacaoDescricao || undefined,
+            })),
+            stage: "prospect",
+            createdAt: new Date().toISOString(),
+          }}
           isOpen={!!outreachCompany}
           onClose={() => setOutreachCompany(null)}
+          onUpdateLead={(updated) => {
+            const storageKey = "openseo_b2b_pipeline_leads";
+            try {
+              const saved = localStorage.getItem(storageKey);
+              const list: PipelineLead[] = saved ? JSON.parse(saved) : [];
+              const exists = list.some((l) => l.cnpj === updated.cnpj);
+              const nextList = exists
+                ? list.map((l) => (l.cnpj === updated.cnpj ? updated : l))
+                : [updated, ...list];
+              localStorage.setItem(storageKey, JSON.stringify(nextList));
+            } catch {
+              // ignore
+            }
+          }}
         />
       )}
     </div>
