@@ -45,34 +45,39 @@ async function getBacklinks(
     schema: z.array(backlinksItemSchema),
     maxAgeMs: 86400_000,
     load: async () => {
-      const target = normalizeBacklinksTarget(input.domain, {
-        scope: "subdomains",
-      });
-      const from = new Date(Date.now() - 7 * 86400_000)
-        .toISOString()
-        .slice(0, 10);
-      const response = await createDataforseoClient(
-        billingCustomer,
-      ).backlinks.rows({
-        target: target.apiTarget,
-        includeSubdomains: true,
-        limit: 25,
-        mode: "one_per_domain",
-        status: input.kind === "lost" ? "lost" : "live",
-        hideSpam: false,
-        orderBy: [input.kind === "lost" ? "last_seen,desc" : "first_seen,desc"],
-        filters:
-          input.kind === "all"
-            ? undefined
-            : [
-                [
-                  input.kind === "lost" ? "last_seen" : "first_seen",
-                  ">=",
-                  `${from} 00:00:00 +00:00`,
+      try {
+        const target = normalizeBacklinksTarget(input.domain, {
+          scope: "subdomains",
+        });
+        const from = new Date(Date.now() - 7 * 86400_000)
+          .toISOString()
+          .slice(0, 10);
+        const response = await createDataforseoClient(
+          billingCustomer,
+        ).backlinks.rows({
+          target: target.apiTarget,
+          includeSubdomains: true,
+          limit: 25,
+          mode: "one_per_domain",
+          status: input.kind === "lost" ? "lost" : "live",
+          hideSpam: false,
+          orderBy: [input.kind === "lost" ? "last_seen,desc" : "first_seen,desc"],
+          filters:
+            input.kind === "all"
+              ? undefined
+              : [
+                  [
+                    input.kind === "lost" ? "last_seen" : "first_seen",
+                    ">=",
+                    `${from} 00:00:00 +00:00`,
+                  ],
                 ],
-              ],
-      });
-      return response.items;
+        });
+        return response.items;
+      } catch (err) {
+        console.warn("[DashboardSiteService] Backlinks unavailable, returning empty list:", err);
+        return [];
+      }
     },
   });
   return { ...result, value: mapBacklinksRows(result.value) };
@@ -292,20 +297,25 @@ async function getLinkActivity(
     schema: z.array(referringDomainItemSchema),
     maxAgeMs: 86400_000,
     load: async () => {
-      const from = new Date(Date.now() - 7 * 86400_000)
-        .toISOString()
-        .slice(0, 10);
-      const response = await createDataforseoClient(
-        billingCustomer,
-      ).backlinks.referringDomains({
-        target,
-        includeSubdomains: true,
-        limit: 25,
-        hideSpam: false,
-        orderBy: ["first_seen,desc"],
-        filters: [["first_seen", ">=", `${from} 00:00:00 +00:00`]],
-      });
-      return response.items;
+      try {
+        const from = new Date(Date.now() - 7 * 86400_000)
+          .toISOString()
+          .slice(0, 10);
+        const response = await createDataforseoClient(
+          billingCustomer,
+        ).backlinks.referringDomains({
+          target,
+          includeSubdomains: true,
+          limit: 25,
+          hideSpam: false,
+          orderBy: ["first_seen,desc"],
+          filters: [["first_seen", ">=", `${from} 00:00:00 +00:00`]],
+        });
+        return response.items;
+      } catch (err) {
+        console.warn("[DashboardSiteService] Referring domains unavailable, returning empty list:", err);
+        return [];
+      }
     },
   });
   // Stale domain results must not trigger a second charge or pretend the week is quiet.
