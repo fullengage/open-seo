@@ -23,6 +23,7 @@ import {
   SeverityBadge,
 } from "@/client/features/audit/shared";
 import { ExportMenu } from "@/client/components/ExportMenu";
+import { Badge } from "@/client/components/ui/badge";
 import {
   Alert,
   AlertDescription,
@@ -47,7 +48,7 @@ export function ResultsView({
   /** The page already says bot protection blocked the whole site. */
   siteBlocked: boolean;
 }) {
-  const { audit, pages, lighthouse, issues } = data;
+  const { audit, pages, lighthouse, issues, delta } = data;
   const crawlStopped = issues.some(
     (issue) => issue.issueType === "crawl-rate-limited",
   );
@@ -134,6 +135,37 @@ export function ResultsView({
 
       <RenderingWarnings data={data} />
 
+      {delta?.hasPreviousAudit && (
+        <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4 text-emerald-950 dark:text-emerald-200">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2 font-semibold text-emerald-700 dark:text-emerald-400">
+                <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                Auditoria Incremental Ativa
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Comparativo com a auditoria anterior:
+                {" "}<strong className="text-foreground">{delta.pagesUnchanged}</strong> inalteradas,
+                {" "}<strong className="text-foreground">{delta.pagesModified}</strong> modificadas,
+                {" "}<strong className="text-foreground">{delta.pagesAdded}</strong> novas.
+              </p>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              {delta.issuesResolvedCount > 0 && (
+                <Badge variant="success" className="font-medium">
+                  ✓ {delta.issuesResolvedCount} {delta.issuesResolvedCount === 1 ? "problema corrigido" : "problemas corrigidos"}
+                </Badge>
+              )}
+              {delta.issuesNewCount > 0 && (
+                <Badge variant="warning" className="font-medium">
+                  +{delta.issuesNewCount} {delta.issuesNewCount === 1 ? "novo problema" : "novos problemas"}
+                </Badge>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       <StatsStrip
         pagesCrawled={audit.pagesCrawled}
         issues={issues}
@@ -142,7 +174,9 @@ export function ResultsView({
         lighthouseSummary={stats.lighthouseSummary}
       />
 
-      {activeTab === "issues" && <IssuesView issues={issues} tabs={tabs} />}
+      {activeTab === "issues" && (
+        <IssuesView issues={issues} tabs={tabs} delta={delta} />
+      )}
       {activeTab === "pages" && (
         <PagesTable
           pages={pages}

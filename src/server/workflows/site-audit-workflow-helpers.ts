@@ -102,6 +102,21 @@ export async function crawlPage(
       url,
     );
 
+    if (statusCode === 304) {
+      return emptyPageResult({
+        url,
+        statusCode: 304,
+        fetchClass: "ok",
+        redirectUrl: null,
+        responseTimeMs,
+        xRobotsTag,
+        headerCanonicalUrl,
+        crawlDepth,
+        inSitemap,
+        rateLimited,
+      });
+    }
+
     if (statusCode >= 300 && statusCode < 400) {
       const location = response.headers.get("location");
       const redirectUrl = location ? normalizeUrl(location, url) : null;

@@ -56,39 +56,101 @@ export async function fetchLighthouseResult(
   strategy: "mobile" | "desktop",
   billingCustomer: BillingCustomerContext,
 ): Promise<LighthouseFetchResult> {
-  const dataforseo = createDataforseoClient(billingCustomer);
-  try {
-    const data = await dataforseo.lighthouse.live({ url, strategy });
+  const apiKey =
+    process.env.GOOGLE_PAGESPEED_API_KEY ||
+    process.env.PAGESPEED_API_KEY ||
+    process.env.GOOGLE_API_KEY;
 
-    return {
-      result: {
-        url,
-        pageId,
-        strategy,
-        performanceScore: data.scores.performance,
-        accessibilityScore: data.scores.accessibility,
-        bestPracticesScore: data.scores["best-practices"],
-        seoScore: data.scores.seo,
-        lcpMs: data.metrics.largestContentfulPaint.numericValue,
-        cls: data.metrics.cumulativeLayoutShift.numericValue,
-        inpMs: data.metrics.interactionToNextPaint.numericValue,
-        ttfbMs: data.metrics.serverResponseTime.numericValue,
-      },
-      payloadJson: JSON.stringify(data),
-    };
-  } catch (error) {
-    const failed = error instanceof Error ? error : new Error(String(error));
-    // Lighthouse runtime errors (ERRORED_DOCUMENT_REQUEST, NOT_HTML, NO_FCP) mean the
-    // tenant's page didn't load for the provider's Chrome. The failure is already
-    // surfaced on the audit row, so there is nothing for us to act on.
-    const log = failed.message.includes(
-      "Lighthouse encountered an error with the following code",
-    )
-      ? console.warn
-      : console.error;
-    log(`Lighthouse failed for ${url} (${strategy}): ${failed.message}`);
-    return failedLighthouseFetch(url, pageId, strategy, failed.message);
+  if (apiKey) {
+    try {
+      const apiUrl = new URL(
+        "https://www.googleapis.com/pagespeedonline/v5/runPagespeed",
+      );
+      apiUrl.searchParams.set("url", url);
+      apiUrl.searchParams.set("strategy", strategy.toUpperCase());
+      apiUrl.searchParams.append("category", "PERFORMANCE");
+      apiUrl.searchParams.append("category", "SEO");
+      apiUrl.searchParams.append("category", "ACCESSIBILITY");
+      apiUrl.searchParams.append("category", "BEST_PRACTICES");
+      apiUrl.searchParams.set("key", apiKey);
+
+      const response = await fetch(apiUrl.toString(), {
+        signal: AbortSignal.timeout(60_000),
+      });
+
+      if (response.ok) {
+        const data = (await response.json()) as {
+          lighthouseResult?: {
+            categories?: {
+              performance?: { score: number | null };
+              accessibility?: { score: number | null };
+              "best-practices"?: { score: number | null };
+              seo?: { score: number | null };
+            };
+            audits?: Record<string, { numericValue?: number | null }>;
+          };
+        };
+
+        const lh = data.lighthouseResult;
+        if (lh?.categories) {
+          const perf =
+            lh.categories.performance?.score != null
+              ? Math.round(lh.categories.performance.score * 100)
+              : null;
+          const a11y =
+            lh.categories.accessibility?.score != null
+              ? Math.round(lh.categories.accessibility.score * 100)
+              : null;
+          const bp =
+            lh.categories["best-practices"]?.score != null
+              ? Math.round(lh.categories["best-practices"].score * 100)
+              : null;
+          const seo =
+            lh.categories.seo?.score != null
+              ? Math.round(lh.categories.seo.score * 100)
+              : null;
+
+          const lcp =
+            lh.audits?.["largest-contentful-paint"]?.numericValue ?? null;
+          const cls =
+            lh.audits?.["cumulative-layout-shift"]?.numericValue ?? null;
+          const inp =
+            lh.audits?.["interaction-to-next-paint"]?.numericValue ?? null;
+          const ttfb =
+            lh.audits?.["server-response-time"]?.numericValue ?? null;
+
+          return {
+            result: {
+              url,
+              pageId,
+              strategy,
+              performanceScore: perf,
+              accessibilityScore: a11y,
+              bestPracticesScore: bp,
+              seoScore: seo,
+              lcpMs: lcp,
+              cls,
+              inpMs: inp,
+              ttfbMs: ttfb,
+            },
+            payloadJson: JSON.stringify(data),
+          };
+        }
+      }
+    } catch (err) {
+      console.warn(
+        `[PageSpeed API] Failed for ${url} (${strategy}):`,
+        err instanceof Error ? err.message : String(err),
+      );
+    }
   }
+
+  return failedLighthouseFetch(
+    url,
+    pageId,
+    strategy,
+    "Lighthouse requires PAGESPEED_API_KEY.",
+  );
 }
 
 export async function storeLighthouseResult(input: {

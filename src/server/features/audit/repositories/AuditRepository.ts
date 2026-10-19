@@ -4,7 +4,7 @@
  * audit_pages, audit_issues, and stored Lighthouse results. Link edges live
  * in the per-audit scratchpad Durable Object, not here.
  */
-import { and, count, desc, eq } from "drizzle-orm";
+import { and, count, desc, eq, ne, sql } from "drizzle-orm";
 import { db } from "@/db";
 import {
   audits,
@@ -343,10 +343,181 @@ async function getAuditUsageForOrganization(organizationId: string) {
   };
 }
 
+export interface IncrementalAuditDelta {
+  hasPreviousAudit: boolean;
+  previousAuditId: string | null;
+  previousDate: string | null;
+  pagesAdded: number;
+  pagesRemoved: number;
+  pagesUnchanged: number;
+  pagesModified: number;
+  issuesNewCount: number;
+  issuesResolvedCount: number;
+  resolvedIssues: Array<{
+    issueType: string;
+    pageUrl: string;
+    severity: string;
+  }>;
+  newIssues: Array<{
+    issueType: string;
+    pageUrl: string;
+    severity: string;
+  }>;
+}
+
+async function getPreviousCompletedAudit(
+  projectId: string,
+  beforeStartedAt?: string | null,
+  excludeAuditId?: string,
+) {
+  const conditions = [
+    eq(audits.projectId, projectId),
+    eq(audits.status, "completed"),
+  ];
+  if (beforeStartedAt) {
+    conditions.push(sql`${audits.startedAt} < ${beforeStartedAt}`);
+  }
+  if (excludeAuditId) {
+    conditions.push(ne(audits.id, excludeAuditId));
+  }
+
+  return db.query.audits.findFirst({
+    where: and(...conditions),
+    orderBy: desc(audits.startedAt),
+  });
+}
+
+async function getIncrementalDelta(
+  auditId: string,
+  projectId: string,
+  currentPages: Array<{ url: string; contentHash?: string | null; statusCode?: number | null }>,
+  currentIssues: Array<{ issueType: string; pageUrl: string; severity: string }>,
+  currentStartedAt?: string | null,
+): Promise<IncrementalAuditDelta> {
+  const previousAudit = await getPreviousCompletedAudit(
+    projectId,
+    currentStartedAt,
+    auditId,
+  );
+
+  if (!previousAudit) {
+    return {
+      hasPreviousAudit: false,
+      previousAuditId: null,
+      previousDate: null,
+      pagesAdded: currentPages.length,
+      pagesRemoved: 0,
+      pagesUnchanged: 0,
+      pagesModified: 0,
+      issuesNewCount: currentIssues.length,
+      issuesResolvedCount: 0,
+      resolvedIssues: [],
+      newIssues: currentIssues.map((i) => ({
+        issueType: i.issueType,
+        pageUrl: i.pageUrl,
+        severity: i.severity,
+      })),
+    };
+  }
+
+  const [prevPages, prevIssues] = await Promise.all([
+    db.query.auditPages.findMany({
+      where: eq(auditPages.auditId, previousAudit.id),
+      columns: { url: true, contentHash: true, statusCode: true },
+    }),
+    db.query.auditIssues.findMany({
+      where: eq(auditIssues.auditId, previousAudit.id),
+      columns: { issueType: true, pageUrl: true, severity: true },
+    }),
+  ]);
+
+  const prevPagesMap = new Map(prevPages.map((p) => [p.url, p]));
+  const currPagesMap = new Map(currentPages.map((p) => [p.url, p]));
+
+  let pagesAdded = 0;
+  let pagesUnchanged = 0;
+  let pagesModified = 0;
+
+  for (const curr of currentPages) {
+    const prev = prevPagesMap.get(curr.url);
+    if (!prev) {
+      pagesAdded += 1;
+    } else if (
+      curr.contentHash &&
+      prev.contentHash &&
+      curr.contentHash === prev.contentHash &&
+      curr.statusCode === prev.statusCode
+    ) {
+      pagesUnchanged += 1;
+    } else {
+      pagesModified += 1;
+    }
+  }
+
+  let pagesRemoved = 0;
+  for (const prev of prevPages) {
+    if (!currPagesMap.has(prev.url)) {
+      pagesRemoved += 1;
+    }
+  }
+
+  const issueKey = (i: { issueType: string; pageUrl: string }) =>
+    `${i.issueType}:::${i.pageUrl}`;
+
+  const prevIssueMap = new Map(prevIssues.map((i) => [issueKey(i), i]));
+  const currIssueMap = new Map(currentIssues.map((i) => [issueKey(i), i]));
+
+  const resolvedIssues: Array<{
+    issueType: string;
+    pageUrl: string;
+    severity: string;
+  }> = [];
+
+  for (const [key, prev] of prevIssueMap.entries()) {
+    if (!currIssueMap.has(key)) {
+      resolvedIssues.push({
+        issueType: prev.issueType,
+        pageUrl: prev.pageUrl,
+        severity: prev.severity,
+      });
+    }
+  }
+
+  const newIssues: Array<{
+    issueType: string;
+    pageUrl: string;
+    severity: string;
+  }> = [];
+
+  for (const [key, curr] of currIssueMap.entries()) {
+    if (!prevIssueMap.has(key)) {
+      newIssues.push({
+        issueType: curr.issueType,
+        pageUrl: curr.pageUrl,
+        severity: curr.severity,
+      });
+    }
+  }
+
+  return {
+    hasPreviousAudit: true,
+    previousAuditId: previousAudit.id,
+    previousDate: previousAudit.startedAt,
+    pagesAdded,
+    pagesRemoved,
+    pagesUnchanged,
+    pagesModified,
+    issuesNewCount: newIssues.length,
+    issuesResolvedCount: resolvedIssues.length,
+    resolvedIssues,
+    newIssues,
+  };
+}
+
 async function getAuditResultsForProject(auditId: string, projectId: string) {
   const audit = await getAuditForProject(auditId, projectId);
   if (!audit) {
-    return { audit: null, pages: [], lighthouse: [], issues: [] };
+    return { audit: null, pages: [], lighthouse: [], issues: [], delta: null };
   }
 
   const [pages, lighthouse, issues] = await Promise.all([
@@ -361,7 +532,15 @@ async function getAuditResultsForProject(auditId: string, projectId: string) {
     }),
   ]);
 
-  return { audit, pages, lighthouse, issues };
+  const delta = await getIncrementalDelta(
+    auditId,
+    projectId,
+    pages,
+    issues,
+    audit.startedAt,
+  );
+
+  return { audit, pages, lighthouse, issues, delta };
 }
 
 async function getLighthouseResultById(input: {

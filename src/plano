@@ -5,7 +5,7 @@
 - [x] Criar estados claros de erro, carregamento e ausência de dados (Fallbacks seguros aplicados em Dashboard e Search Performance com renderização estável)
 
 ## Fase 2 — Dados gratuitos
-- [ ] Implementar crawler próprio e incremental
+- [x] Implementar crawler próprio e incremental (Rastreamento nativo sem DataForSEO, suporte a 304 Not Modified, detecção de mudanças/delta entre auditorias e exibição de problemas corrigidos e novos)
 - [ ] Integrar PageSpeed e Lighthouse
 - [ ] Construir análise de oportunidades pelo Search Console
 - [ ] Criar cache compartilhado com isolamento por autorização
