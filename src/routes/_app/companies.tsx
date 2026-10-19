@@ -1,13 +1,33 @@
 import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation } from "@tanstack/react-query";
-import { Building2, Search, Users, MapPin, Phone, Mail, Globe, ArrowRight, Loader2, Sparkles } from "lucide-react";
+import {
+  Building2,
+  Search,
+  Users,
+  MapPin,
+  Phone,
+  Mail,
+  ArrowRight,
+  Loader2,
+  Sparkles,
+  PlusCircle,
+  Kanban,
+  Compass,
+  Zap,
+} from "lucide-react";
 import { Button } from "@/client/components/ui/button";
 import { Input } from "@/client/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/client/components/ui/card";
 import { Badge } from "@/client/components/ui/badge";
+import { toast } from "sonner";
 import { getCompanyByCnpj, searchCompaniesBySegment } from "@/serverFunctions/companies";
 import type { CompanyDetail } from "@/types/schemas/company";
+import type { PipelineLead } from "@/client/features/companies/types";
+import { OutreachCopyDialog } from "@/client/features/companies/OutreachCopyDialog";
+import { LocalSeoProgrammatic } from "@/client/features/companies/LocalSeoProgrammatic";
+import { LeadsKanban } from "@/client/features/companies/LeadsKanban";
+import { QuotasCard } from "@/client/features/companies/QuotasCard";
 
 export const Route = createFileRoute("/_app/companies")({
   component: CompaniesPage,
@@ -32,12 +52,19 @@ export function CompaniesPage() {
   const [ufInput, setUfInput] = useState("SP");
   const [company, setCompany] = useState<CompanyDetail | null>(null);
   const [segmentResults, setSegmentResults] = useState<CompanyDetail[]>([]);
-  const [activeTab, setActiveTab] = useState<"cnpj" | "segment">("cnpj");
+  const [activeTab, setActiveTab] = useState<"cnpj" | "segment" | "local_seo" | "kanban">("cnpj");
+  const [outreachCompany, setOutreachCompany] = useState<CompanyDetail | null>(null);
 
   const cnpjMutation = useMutation({
     mutationFn: (cnpj: string) => getCompanyByCnpj({ data: { cnpj } }),
     onSuccess: (data) => {
       setCompany(data);
+      if (!data) {
+        toast.error("Empresa não encontrada para este CNPJ.");
+      }
+    },
+    onError: () => {
+      toast.error("Erro ao consultar base de CNPJ.");
     },
   });
 
@@ -46,6 +73,12 @@ export function CompaniesPage() {
       searchCompaniesBySegment({ data: { cnae, uf, limit: 15 } }),
     onSuccess: (data) => {
       setSegmentResults(data);
+      if (data.length === 0) {
+        toast.info("Nenhuma empresa encontrada com estes filtros.");
+      }
+    },
+    onError: () => {
+      toast.error("Erro ao filtrar empresas.");
     },
   });
 
@@ -61,46 +94,107 @@ export function CompaniesPage() {
     segmentMutation.mutate({ cnae: cnaeInput.trim(), uf: ufInput.trim() });
   }
 
+  function handleAddToPipeline(targetCompany: CompanyDetail) {
+    const storageKey = "openseo_b2b_pipeline_leads";
+    try {
+      const saved = localStorage.getItem(storageKey);
+      const leads: PipelineLead[] = saved ? JSON.parse(saved) : [];
+
+      if (leads.some((l) => l.cnpj === targetCompany.cnpj)) {
+        toast.info("Esta empresa já está no Pipeline Comercial!");
+        return;
+      }
+
+      const newLead: PipelineLead = {
+        id: `lead-${Date.now()}`,
+        cnpj: targetCompany.cnpj,
+        razaoSocial: targetCompany.razaoSocial,
+        nomeFantasia: targetCompany.nomeFantasia,
+        uf: targetCompany.uf,
+        municipio: targetCompany.municipio,
+        telefone: targetCompany.telefone,
+        email: targetCompany.email,
+        cnae: targetCompany.cnae,
+        cnaeDescricao: targetCompany.cnaeDescricao,
+        socioPrincipal: targetCompany.socios?.[0]?.nome || null,
+        stage: "prospect",
+        createdAt: new Date().toISOString(),
+      };
+
+      const updated = [newLead, ...leads];
+      localStorage.setItem(storageKey, JSON.stringify(updated));
+      toast.success(`${targetCompany.nomeFantasia || targetCompany.razaoSocial} adicionada ao Pipeline!`);
+    } catch {
+      toast.error("Erro ao salvar lead no pipeline local.");
+    }
+  }
+
   return (
     <div className="flex-1 space-y-6 p-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
             <Building2 className="h-6 w-6 text-primary" />
-            Consulta de Empresas & Inteligência de Mercado
+            Inteligência B2B, SEO Local & Prospecção (Anti-Clay)
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Consulte dados cadastrais da Receita Federal, quadro societário (QSA) e prospecte empresas no Brasil.
+            Mapeamento de empresas na Receita Federal (QSA), landing pages programáticas locais, pipeline de leads e gerador de copy de abordagem de vendas.
           </p>
         </div>
       </div>
 
-      <div className="flex border-b border-border space-x-4">
+      <div className="flex border-b border-border space-x-2 md:space-x-4 overflow-x-auto">
         <button
           type="button"
           onClick={() => setActiveTab("cnpj")}
-          className={`pb-2 text-sm font-medium border-b-2 transition-colors ${
+          className={`pb-2.5 text-sm font-medium border-b-2 transition-colors whitespace-nowrap flex items-center gap-2 ${
             activeTab === "cnpj"
               ? "border-primary text-primary"
               : "border-transparent text-muted-foreground hover:text-foreground"
           }`}
         >
-          Busca por CNPJ
+          <Search className="h-4 w-4" />
+          Busca por CNPJ & QSA
         </button>
         <button
           type="button"
           onClick={() => setActiveTab("segment")}
-          className={`pb-2 text-sm font-medium border-b-2 transition-colors ${
+          className={`pb-2.5 text-sm font-medium border-b-2 transition-colors whitespace-nowrap flex items-center gap-2 ${
             activeTab === "segment"
               ? "border-primary text-primary"
               : "border-transparent text-muted-foreground hover:text-foreground"
           }`}
         >
-          Prospecção por Segmento (CNAE + Estado)
+          <Building2 className="h-4 w-4" />
+          Prospecção por CNAE
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab("local_seo")}
+          className={`pb-2.5 text-sm font-medium border-b-2 transition-colors whitespace-nowrap flex items-center gap-2 ${
+            activeTab === "local_seo"
+              ? "border-primary text-primary"
+              : "border-transparent text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <Compass className="h-4 w-4" />
+          SEO Local & LPs Programáticas
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab("kanban")}
+          className={`pb-2.5 text-sm font-medium border-b-2 transition-colors whitespace-nowrap flex items-center gap-2 ${
+            activeTab === "kanban"
+              ? "border-primary text-primary"
+              : "border-transparent text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <Kanban className="h-4 w-4" />
+          Pipeline Comercial (Kanban)
         </button>
       </div>
 
-      {activeTab === "cnpj" ? (
+      {activeTab === "cnpj" && (
         <div className="space-y-6">
           <Card>
             <CardHeader className="pb-3">
@@ -158,16 +252,35 @@ export function CompaniesPage() {
                       </p>
                     </div>
 
-                    <Button
-                      onClick={() => {
-                        window.location.href = `/projects?create=true&name=${encodeURIComponent(company.nomeFantasia || company.razaoSocial)}`;
-                      }}
-                      className="gap-2"
-                    >
-                      <Sparkles className="h-4 w-4" />
-                      Criar Projeto SEO para esta Empresa
-                      <ArrowRight className="h-4 w-4" />
-                    </Button>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Button
+                        variant="outline"
+                        onClick={() => setOutreachCompany(company)}
+                        className="gap-1.5"
+                      >
+                        <Sparkles className="h-4 w-4 text-primary" />
+                        Gerar Abordagem (Anti-Clay)
+                      </Button>
+
+                      <Button
+                        variant="secondary"
+                        onClick={() => handleAddToPipeline(company)}
+                        className="gap-1.5"
+                      >
+                        <PlusCircle className="h-4 w-4" />
+                        Adicionar ao Pipeline
+                      </Button>
+
+                      <Button
+                        onClick={() => {
+                          window.location.href = `/projects?create=true&name=${encodeURIComponent(company.nomeFantasia || company.razaoSocial)}`;
+                        }}
+                        className="gap-2"
+                      >
+                        Criar Projeto SEO
+                        <ArrowRight className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent className="grid gap-6 md:grid-cols-2">
@@ -247,7 +360,9 @@ export function CompaniesPage() {
             </div>
           )}
         </div>
-      ) : (
+      )}
+
+      {activeTab === "segment" && (
         <div className="space-y-6">
           <Card>
             <CardHeader className="pb-3">
@@ -318,22 +433,61 @@ export function CompaniesPage() {
                     </div>
                   </div>
 
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setCnpjInput(emp.cnpj);
-                      setActiveTab("cnpj");
-                      cnpjMutation.mutate(emp.cnpj);
-                    }}
-                  >
-                    Ver Ficha Completa
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setOutreachCompany(emp)}
+                      className="gap-1 text-xs"
+                    >
+                      <Sparkles className="h-3.5 w-3.5 text-primary" />
+                      Copy Vendas
+                    </Button>
+
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => handleAddToPipeline(emp)}
+                      className="gap-1 text-xs"
+                    >
+                      <PlusCircle className="h-3.5 w-3.5" />
+                      Salvar no Funil
+                    </Button>
+
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setCnpjInput(emp.cnpj);
+                        setActiveTab("cnpj");
+                        cnpjMutation.mutate(emp.cnpj);
+                      }}
+                      className="text-xs"
+                    >
+                      Ficha
+                    </Button>
+                  </div>
                 </Card>
               ))}
             </div>
           )}
         </div>
+      )}
+
+      {activeTab === "local_seo" && <LocalSeoProgrammatic />}
+
+      {activeTab === "kanban" && <LeadsKanban />}
+
+      <div className="pt-6">
+        <QuotasCard />
+      </div>
+
+      {outreachCompany && (
+        <OutreachCopyDialog
+          company={outreachCompany}
+          isOpen={!!outreachCompany}
+          onClose={() => setOutreachCompany(null)}
+        />
       )}
     </div>
   );
