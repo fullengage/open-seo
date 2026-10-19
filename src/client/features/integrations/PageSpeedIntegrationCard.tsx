@@ -28,9 +28,9 @@ export function PageSpeedIntegrationCard({
     ReturnType<typeof runOnDemandPageSpeed>
   > | null>(null);
 
-  const handleTest = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!url.trim()) return;
+  const handleTest = async (e?: React.SyntheticEvent) => {
+    if (e) e.preventDefault();
+    if (!url.trim() || loading) return;
 
     try {
       setLoading(true);
@@ -73,7 +73,7 @@ export function PageSpeedIntegrationCard({
           As verificações do Lighthouse no Site Audit utilizam esta conexão direta, sem custos adicionais.
         </p>
 
-        <form onSubmit={handleTest} className="space-y-4 rounded-xl border border-border/60 bg-muted/30 p-4">
+        <form onSubmit={(e) => void handleTest(e)} className="space-y-4 rounded-xl border border-border/60 bg-muted/30 p-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
             <div className="flex-1">
               <label htmlFor="test-url" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
@@ -85,6 +85,12 @@ export function PageSpeedIntegrationCard({
                 required
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    void handleTest();
+                  }
+                }}
                 placeholder="https://exemplo.com.br"
                 className="mt-1"
               />
@@ -118,9 +124,10 @@ export function PageSpeedIntegrationCard({
 
             <div className="flex flex-col justify-end">
               <Button
-                type="submit"
+                type="button"
+                onClick={() => void handleTest()}
                 disabled={loading}
-                className="mt-1 sm:mt-5 h-10 gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium"
+                className="mt-1 sm:mt-5 h-10 gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium cursor-pointer"
               >
                 {loading ? (
                   <>
