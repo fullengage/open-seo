@@ -132,7 +132,30 @@ function SignInPage() {
         ) : null
       }
     >
-      {!showEmailForm ? (
+      {!isHostedMode ? (
+        <div className="space-y-4 py-2 text-center">
+          <p className="text-sm text-foreground/70">
+            Sua sessão foi encerrada. Clique no botão abaixo para entrar novamente no OpenSEO.
+          </p>
+          <Button
+            type="button"
+            className="w-full h-10 font-medium"
+            variant="default"
+            onClick={async () => {
+              try {
+                await fetch("/api/auth/sign-in/local", {
+                  method: "POST",
+                });
+              } catch {
+                // Ignore error
+              }
+              window.location.href = redirectTo || "/";
+            }}
+          >
+            Entrar no OpenSEO
+          </Button>
+        </div>
+      ) : !showEmailForm ? (
         <>
           <AuthMethodChooser
             googleLabel="Continue with Google"
