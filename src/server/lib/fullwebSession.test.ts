@@ -23,3 +23,14 @@ describe("sessão assinada", async () => {
     expect(readSession(null)).toBeNull();
   });
 });
+
+describe("contas liberadas", async () => {
+  const { signSession, readSession, sessionFromChatwoot } = await import("./fullwebSession");
+  it("conta da Fullweb (1) entra; conta de cliente (30) não", () => {
+    const fullweb = signSession({ uid: "cw-1", name: "R", email: "r@x", accountId: 1, role: "administrator", src: "chatwoot" });
+    const cliente = signSession({ uid: "cw-9", name: "M", email: "m@x", accountId: 30, role: "agent", src: "chatwoot" });
+    expect(readSession(`openseo_session=${fullweb}`)).not.toBeNull();
+    expect(readSession(`openseo_session=${cliente}`)).toBeNull();
+    expect(sessionFromChatwoot({ id: 9, name: "M", email: "m@x", accounts: [{ id: 30, role: "administrator" }] })).toBeNull();
+  });
+});

@@ -19,6 +19,12 @@ function withSession(token: string, body: unknown): Response {
   return new Response(JSON.stringify(body), { status: 200, headers });
 }
 
+const forbidden = () =>
+  Response.json(
+    { error: { message: "O Prospecção & SEO ainda não está liberado para esta conta." } },
+    { status: 403 },
+  );
+
 const unauthorized = (message: string) => Response.json({ error: { message } }, { status: 401 });
 
 async function readJson(request: Request): Promise<Record<string, unknown>> {
@@ -69,7 +75,9 @@ async function handleLocalAuth(request: Request): Promise<Response> {
       client: String(tokens.client),
       uid: String(tokens.uid),
     };
-    return withSession(sessionFromChatwoot(user, accountId, cw), { ok: true, name: user.name });
+    const token = sessionFromChatwoot(user, accountId, cw);
+    if (!token) return forbidden();
+    return withSession(token, { ok: true, name: user.name });
   }
 
   if (path.endsWith("/sign-in") || path.endsWith("/sign-in/email") || path.endsWith("/sign-in/local")) {
@@ -83,7 +91,9 @@ async function handleLocalAuth(request: Request): Promise<Response> {
       const result = await chatwootSignIn(email, password);
       if (!result) return unauthorized("E-mail ou senha incorretos.");
       const { user, tokens } = result;
-      return withSession(sessionFromChatwoot(user, null, tokens), {
+      const token = sessionFromChatwoot(user, null, tokens);
+      if (!token) return forbidden();
+      return withSession(token, {
         user: { id: `cw-${user.id}`, name: user.name, email: user.email },
       });
     }

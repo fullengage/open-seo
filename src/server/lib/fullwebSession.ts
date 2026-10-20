@@ -18,6 +18,13 @@ export interface FullwebSession {
 }
 
 export const CHATWOOT_URL = process.env.CHATWOOT_URL || "https://chat.chathook.com.br";
+
+// ponytail: lista fixa até existir separação de dados por organização; depois vira o plano da conta
+const ALLOWED_ACCOUNTS = (process.env.FULLWEB_ACCOUNT_IDS || "1")
+  .split(",")
+  .map((v) => Number(v.trim()))
+  .filter(Number.isFinite);
+export const isAllowedAccount = (id: number | null | undefined) => id != null && ALLOWED_ACCOUNTS.includes(id);
 const MAX_AGE = 30 * 24 * 3600;
 
 function secret(): string {
@@ -45,7 +52,9 @@ export function readSession(cookieHeader: string | null): FullwebSession | null 
   if (got.length !== expected.length || !timingSafeEqual(got, expected)) return null;
   try {
     const p = JSON.parse(Buffer.from(body, "base64url").toString()) as FullwebSession;
-    return p.exp && p.exp > Date.now() / 1000 ? p : null;
+    if (!p.exp || p.exp <= Date.now() / 1000) return null;
+    if (p.src === "chatwoot" && !isAllowedAccount(p.accountId)) return null;
+    return p;
   } catch {
     return null;
   }
@@ -93,9 +102,10 @@ export async function chatwootSignIn(
   return { user: j.data, tokens: token && client && uid ? { token, client, uid } : undefined };
 }
 
-export function sessionFromChatwoot(u: CwUser, preferredAccountId?: number | null, cw?: CwTokens): string {
-  const accounts = u.accounts || [];
+export function sessionFromChatwoot(u: CwUser, preferredAccountId?: number | null, cw?: CwTokens): string | null {
+  const accounts = (u.accounts || []).filter((a) => isAllowedAccount(a.id));
   const acc = accounts.find((a) => a.id === preferredAccountId) || accounts[0] || null;
+  if (!acc) return null;
   return signSession({
     uid: `cw-${u.id}`,
     name: u.name,

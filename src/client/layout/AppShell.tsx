@@ -99,6 +99,12 @@ export function AuthenticatedAppLayout({
     shouldCheckSeoApiKeyStatus,
   ]);
 
+  // Aberto dentro do ChatHook (iframe): o menu é o do ChatHook
+  const [embedded, setEmbedded] = React.useState(false);
+  React.useEffect(() => {
+    setEmbedded(window.self !== window.top);
+  }, []);
+
   const shouldShowSeoApiWarning =
     !seoApiKeyStatusError &&
     isSeoApiKeyConfigured === false &&
@@ -106,13 +112,15 @@ export function AuthenticatedAppLayout({
 
   return (
     <SidebarProvider className="h-[100dvh] min-h-0 overflow-hidden">
-      <Sidebar
-        projectId={sidebarProjectId}
-        projectPending={sidebarProjectPending}
-        ready={ready}
-      />
+      {embedded ? null : (
+        <Sidebar
+          projectId={sidebarProjectId}
+          projectPending={sidebarProjectPending}
+          ready={ready}
+        />
+      )}
       <SidebarInset className="min-h-0 overflow-hidden md:!m-0 md:!mt-2 md:!rounded-none md:!rounded-tl-lg md:border-l md:border-t md:border-sidebar-border md:!shadow-none">
-        <MobileTopBar />
+        {embedded ? null : <MobileTopBar />}
         <SeoApiStatusBanners
           shouldShowSeoApiWarning={shouldShowSeoApiWarning}
           seoApiKeyStatusError={seoApiKeyStatusError}

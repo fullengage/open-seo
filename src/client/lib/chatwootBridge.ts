@@ -9,7 +9,15 @@ if (typeof window !== "undefined" && window.parent !== window && !(window as W).
 
   window.addEventListener("message", async (e: MessageEvent) => {
     if (e.origin !== CHATWOOT_ORIGIN) return;
-    const data = e.data as { type?: string; payload?: Record<string, unknown> } | null;
+    const data = e.data as { type?: string; payload?: Record<string, unknown>; path?: string } | null;
+    if (data?.type === "NAVIGATE" && typeof data.path === "string") {
+      // "companies" é global; o resto é seção do último projeto aberto
+      const projectId = window.localStorage.getItem("openseo:lastProjectId");
+      const target =
+        data.path === "companies" || !projectId ? "/companies" : `/p/${projectId}${data.path ? `/${data.path}` : ""}`;
+      if (window.location.pathname !== target) window.location.href = target;
+      return;
+    }
     if (data?.type !== "AUTH_TOKEN" || !data.payload) return;
     try {
       const res = await fetch("/api/auth/chatwoot", {
