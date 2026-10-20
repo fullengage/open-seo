@@ -7,6 +7,7 @@ import { ThemePreferenceRadio } from "@/client/components/ThemePreferenceMenuIte
 import { Switch } from "@/client/components/ui/switch";
 import { authClient, useSession } from "@/lib/auth-client";
 import { isHostedClientAuthMode } from "@/lib/auth-mode";
+import { QuotasCard } from "@/client/features/companies/QuotasCard";
 import { version } from "../../../../package.json";
 
 export const Route = createFileRoute("/_app/settings/")({
@@ -83,6 +84,15 @@ function PersonalSettings() {
           </div>
         </section>
       )}
+
+      <section className="space-y-4 pt-4 border-t border-border/50">
+        <SectionHeader title="Infraestrutura, Cotas & Custos de APIs" />
+        <p className="text-sm text-muted-foreground">
+          Monitoramento em tempo real da arquitetura de custo zero: PageSpeed API, Web Crawler e Base CNPJ.
+        </p>
+        <QuotasCard />
+      </section>
     </div>
   );
 }
+

@@ -8,6 +8,7 @@ import {
 import { REPORT_IFRAME_SANDBOX } from "@/shared/report-sandbox";
 import { sharePath } from "@/shared/report-share";
 import { domainField } from "@/types/schemas/domain";
+import { PipelineLeadService } from "@/server/features/companies/services/PipelineLeadService";
 
 // The public face of a shared report, `/s/<token>`: a slim bar and the
 // document in the same sandboxed frame the in-app viewer uses. Rendered to a
@@ -177,6 +178,10 @@ export async function renderSharePage(
       "Its reports are hidden until the owner restores it.",
     );
   }
+
+  // Notifica o pipeline comercial de leads caso pertença a um lead
+  void PipelineLeadService.recordShareOpen(token, report.projectDomain);
+
 
   const description = shareDescription(report.summary);
   const canonical = `${new URL(request.url).origin}${sharePath(token)}`;

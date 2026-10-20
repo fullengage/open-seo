@@ -176,4 +176,36 @@ export const PipelineLeadService = {
       return false;
     }
   },
+
+  async recordShareOpen(token: string, domain?: string | null): Promise<void> {
+    const sql = getSql();
+    if (!sql) return;
+
+    try {
+      const nowStr = new Date().toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" });
+      const noteAppend = `\n[${nowStr}] 👁️ Diagnóstico visualizado pelo lead`;
+      
+      if (domain) {
+        await sql`
+          UPDATE pipeline_leads
+          SET 
+            notas = COALESCE(notas, '') || ${noteAppend},
+            atualizado_em = NOW()
+          WHERE site ILIKE ${'%' + domain + '%'}
+             OR (diagnostic->>'shareUrl') ILIKE ${'%' + token + '%'}
+        `;
+      } else {
+        await sql`
+          UPDATE pipeline_leads
+          SET 
+            notas = COALESCE(notas, '') || ${noteAppend},
+            atualizado_em = NOW()
+          WHERE (diagnostic->>'shareUrl') ILIKE ${'%' + token + '%'}
+        `;
+      }
+    } catch (err) {
+      console.warn("PipelineLeadService.recordShareOpen warning:", err);
+    }
+  },
 };
+
