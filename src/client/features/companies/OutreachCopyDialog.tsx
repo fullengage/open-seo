@@ -351,7 +351,8 @@ export function OutreachCopyDialog({
         )}
 
         {/* CASO 2: Bloqueio por Falta de Fatos Negativos Medidos (< 2 fatos) */}
-        {!lead.naoContatar && hasDecisor && !hasEnoughFacts && (
+        {/* Diagnóstico não depende do decisor: é pesquisa, vem antes da abordagem */}
+        {!lead.naoContatar && !hasEnoughFacts && (
           <div className="space-y-4 p-4 bg-muted/40 border border-border rounded-lg animate-in fade-in-50">
             <div className="flex items-start gap-3">
               <Activity className="h-5 w-5 text-primary shrink-0 mt-0.5" />
