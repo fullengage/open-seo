@@ -140,14 +140,6 @@ export function getProjectNavGroups(projectId: string) {
       ],
     },
     {
-      label: "Visibilidade em IA",
-      items: [
-        byPath("/p/$projectId/ai-visibility/research"),
-        byPath("/p/$projectId/prompt-explorer"),
-        byPath("/p/$projectId/ai-visibility"),
-      ],
-    },
-    {
       label: "Meu Site & SEO",
       items: [
         byPath("/p/$projectId/search-performance"),

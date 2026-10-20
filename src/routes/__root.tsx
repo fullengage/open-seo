@@ -34,6 +34,7 @@ import { getActiveOrganizationId } from "@/lib/auth-session";
 captureGoogleLinkError();
 
 import "@/client/lib/staleDeployReload";
+import "@/client/lib/chatwootBridge";
 
 export const Route = createRootRoute({
   head: () => ({

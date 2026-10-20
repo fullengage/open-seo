@@ -217,6 +217,7 @@ function SignInPage() {
 }
 
 function LocalSignInForm({ redirectTo }: { redirectTo: string }) {
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -229,7 +230,7 @@ function LocalSignInForm({ redirectTo }: { redirectTo: string }) {
       const res = await fetch("/api/auth/sign-in/local", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password }),
+        body: JSON.stringify({ email, password }),
       });
       const data = (await res.json()) as { error?: { message?: string } };
       if (!res.ok || data.error) {
@@ -247,12 +248,14 @@ function LocalSignInForm({ redirectTo }: { redirectTo: string }) {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="space-y-1.5 text-left">
-        <label className="text-xs font-medium text-foreground/80">Usuário</label>
+        <label className="text-xs font-medium text-foreground/80">E-mail</label>
         <input
-          type="text"
-          value="admin@localhost"
-          disabled
-          className="w-full rounded-md border border-input bg-muted px-3 py-2 text-sm text-muted-foreground"
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="o mesmo e-mail do ChatHook"
+          autoComplete="email"
+          className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
         />
       </div>
       <div className="space-y-1.5 text-left">

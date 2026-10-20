@@ -28,7 +28,12 @@ import { maybeSendSelfHostHeartbeat } from "@/server/lib/self-host-telemetry";
 import { handleGdprStorageErasure } from "@/server/gdpr/storage-erasure";
 import { GDPR_STORAGE_ERASURE_PATH } from "@/shared/gdpr-erasure";
 
+import { readSession } from "@/server/lib/fullwebSession";
+
 const startHandler = createStartHandler(defaultStreamHandler);
+
+// Fullweb: o OpenSEO abre como aba dentro do Chatwoot (login único)
+const FRAME_ANCESTORS = `frame-ancestors 'self' ${process.env.CHATWOOT_URL || "https://chat.chathook.com.br"}`;
 
 // The app ships no security response headers of its own, so any third-party
 // page can frame an app route and UI-redress a one-click action (delete a
@@ -53,7 +58,7 @@ async function appFetch(request: Request): Promise<Response> {
     return response;
   }
   const headers = new Headers(response.headers);
-  headers.set("Content-Security-Policy", "frame-ancestors 'self'");
+  headers.set("Content-Security-Policy", FRAME_ANCESTORS);
   return new Response(response.body, {
     status: response.status,
     statusText: response.statusText,
@@ -191,11 +196,9 @@ function handleFetch(
 
   // 2. Middleware único de Autenticação para todas as rotas privadas
   if (!isHostedAuthMode(authMode) && !isPublicPath(pathname)) {
-    const cookieHeader = publicRequest.headers.get("cookie") || "";
-    const hasSessionCookie = cookieHeader.includes("openseo_session=");
-    const isSignedOut = cookieHeader.includes("openseo_signed_out=true");
+    const session = readSession(publicRequest.headers.get("cookie"));
 
-    if (!hasSessionCookie || isSignedOut) {
+    if (!session) {
       if (pathname.startsWith("/api/")) {
         return new Response(JSON.stringify({ error: "Unauthorized" }), {
           status: 401,
