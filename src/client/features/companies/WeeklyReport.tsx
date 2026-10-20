@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/client/components/ui/button";
 import type { PipelineLead } from "./types";
 import { getRepliesSince } from "@/serverFunctions/chatwootConversations";
@@ -10,6 +10,14 @@ export function WeeklyReport({ leads }: { leads: PipelineLead[] }) {
   const [open, setOpen] = useState(false);
   const [replies, setReplies] = useState<{ id: string; at: number }[] | null>(null);
   const [note, setNote] = useState<string | null>(null);
+
+  // Esc fecha o painel (ele fica por cima do Kanban)
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open]);
 
   const since = Date.now() - WEEK_MS;
   const approved = leads.filter((l) => l.draft?.status === "approved" && l.draft.approvedAt && Date.parse(l.draft.approvedAt) >= since);
@@ -50,6 +58,7 @@ export function WeeklyReport({ leads }: { leads: PipelineLead[] }) {
       <Button size="sm" variant="outline" className="h-8 text-xs" onClick={load}>
         Relatório da semana
       </Button>
+      {open && <div className="fixed inset-0 z-30" onClick={() => setOpen(false)} />}
       {open && (
         <div className="fixed right-4 top-20 z-40 w-80 rounded-lg border border-border bg-background p-4 shadow-xl space-y-2 text-sm">
           <div className="flex items-center justify-between">
