@@ -22,6 +22,35 @@ if (existsSync(dbPath)) {
   console.warn("[cnpj-daemon] DB file not found at:", dbPath);
 }
 
+// Situação cadastral (Receita): base separada, gerada por import_situacao.py
+const SITUACAO = { "01": "Nula", "02": "Ativa", "03": "Suspensa", "04": "Inapta", "08": "Baixada" };
+const sitPath =
+  process.env.CNPJ_SITUACAO_PATH || dbPath.replace(/cnpj-(\d{4}-\d{2})\.db$/, "situacao-$1.db");
+let hasSituacao = false;
+// Anexa na primeira consulta em que o arquivo existir (a importação pode terminar com o serviço no ar)
+function ensureSituacao() {
+  if (hasSituacao || !db || !existsSync(sitPath)) return hasSituacao;
+  try {
+    db.exec(`ATTACH DATABASE '${sitPath}' AS s`);
+    hasSituacao = true;
+    console.log("[cnpj-daemon] Situação cadastral anexada:", sitPath);
+  } catch (err) {
+    console.error("[cnpj-daemon] Falha ao anexar situação:", err);
+  }
+  return hasSituacao;
+}
+ensureSituacao();
+function situacaoDe(cnpj) {
+  if (!ensureSituacao()) return { situacaoCadastral: null, dataSituacao: null };
+  const r = db.prepare("SELECT sit, data FROM s.situacao WHERE cnpj = ?").get(String(cnpj));
+  if (!r) return { situacaoCadastral: null, dataSituacao: null };
+  const d = String(r.data || "");
+  return {
+    situacaoCadastral: SITUACAO[r.sit] || String(r.sit),
+    dataSituacao: d.length === 8 ? `${d.slice(6, 8)}/${d.slice(4, 6)}/${d.slice(0, 4)}` : null,
+  };
+}
+
 const ALTO_TIETE_CODES = [
   "6713", // Mogi das Cruzes
   "7151", // Suzano
@@ -121,6 +150,7 @@ const server = http.createServer((req, res) => {
           cep: row.cep ? String(row.cep) : null,
           telefone: row.tel ? String(row.tel) : null,
           email: row.email ? String(row.email) : null,
+          ...situacaoDe(row.cnpj),
           filiais,
           socios: socios.map((s) => ({
             nome: String(s.nome),
@@ -146,6 +176,10 @@ const server = http.createServer((req, res) => {
     const municipioParam = (url.searchParams.get("municipio") || "").trim();
     const porteParam = (url.searchParams.get("porte") || "").trim();
     const soMatriz = url.searchParams.get("matriz") !== "false" && url.searchParams.get("matriz") !== "0";
+    const sitJoin =
+      ensureSituacao() && url.searchParams.get("situacao") !== "todas"
+        ? "JOIN s.situacao st ON st.cnpj = e.cnpj AND st.sit = '02'"
+        : "";
 
     if (!cleanCnae || !uf) {
       res.statusCode = 400;
@@ -191,6 +225,7 @@ const server = http.createServer((req, res) => {
         SELECT count(*) as total
         FROM estab e
         JOIN empresa emp ON emp.cnpj_basico = e.cnpj_basico
+        ${sitJoin}
         WHERE ${whereSql}
       `);
       const totalRow = countStmt.get(...params);
@@ -206,6 +241,7 @@ const server = http.createServer((req, res) => {
         JOIN empresa emp ON emp.cnpj_basico = e.cnpj_basico
         LEFT JOIN cnae c ON c.codigo = e.cnae
         LEFT JOIN municipio m ON m.codigo = e.municipio
+        ${sitJoin}
         WHERE ${whereSql}
         ORDER BY emp.capital DESC
         LIMIT ? OFFSET ?

@@ -40,6 +40,7 @@ import { isRecuperacaoJudicialOuFalencia, checkEmailWarning } from "./types";
 import { OutreachCopyDialog } from "./OutreachCopyDialog";
 import { LeadEnrichmentModal } from "./LeadEnrichmentModal";
 import { LeadConversationsDialog } from "./LeadConversationsDialog";
+import { WeeklyReport } from "./WeeklyReport";
 import {
   getPipelineLeads,
   savePipelineLead,
@@ -297,6 +298,7 @@ export function LeadsKanban() {
           <Badge variant="outline" className="text-xs">
             {leads.length} Leads Ativos
           </Badge>
+          <WeeklyReport leads={leads} />
           <Button
             size="sm"
             onClick={handleAddNewLead}

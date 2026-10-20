@@ -57,3 +57,48 @@ export const getLeadConversations = createServerFn({ method: "POST" })
     }));
     return { ok: true as const, contact: { id: contact.id, name: contact.name }, conversations };
   });
+
+// Quem respondeu no ChatHook depois da abordagem aprovada (para o relatório da semana)
+export const getRepliesSince = createServerFn({ method: "POST" })
+  .validator(
+    z.object({
+      leads: z.array(
+        z.object({
+          id: z.string(),
+          email: z.string().nullable().optional(),
+          telefone: z.string().nullable().optional(),
+          since: z.string(),
+        }),
+      ),
+    }),
+  )
+  .handler(async ({ data }) => {
+    const s = readSession(getRequest().headers.get("cookie"));
+    if (!s?.cw || !s.accountId) {
+      return { ok: false as const, reason: "Entre pelo ChatHook para contar as respostas." };
+    }
+    const headers = { "access-token": s.cw.token, client: s.cw.client, uid: s.cw.uid, "token-type": "Bearer" };
+    const base = `${CHATWOOT_URL}/api/v1/accounts/${s.accountId}`;
+    const replied: { id: string; at: number }[] = [];
+    // ponytail: 2 chamadas por lead em sequência; trocar por webhook quando houver dezenas por semana
+    for (const l of data.leads.slice(0, 50)) {
+      const q = (l.email || "").trim() || (l.telefone || "").replace(/\D/g, "");
+      if (!q) continue;
+      const sinceUnix = Date.parse(l.since) / 1000;
+      try {
+        const sr = await fetch(`${base}/contacts/search?q=${encodeURIComponent(q)}`, { headers });
+        const contact = ((await sr.json()) as { payload?: { id: number }[] }).payload?.[0];
+        if (!contact) continue;
+        const cr = await fetch(`${base}/contacts/${contact.id}/conversations`, { headers });
+        const convs = ((await cr.json()) as { payload?: { messages?: { message_type?: number; created_at?: number }[] }[] }).payload || [];
+        const at = convs
+          .flatMap((c) => c.messages || [])
+          .filter((m) => m.message_type === 0 && (m.created_at ?? 0) > sinceUnix)
+          .map((m) => m.created_at ?? 0)[0];
+        if (at) replied.push({ id: l.id, at });
+      } catch {
+        // um lead com erro não derruba o relatório
+      }
+    }
+    return { ok: true as const, replied };
+  });
