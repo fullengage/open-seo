@@ -266,8 +266,25 @@ export function OutreachCopyDialog({
           </Button>
         </div>
 
+        {/* CASO BLOQUEIO: Lead marcou Descadastro / Não Contatar */}
+        {lead.naoContatar && (
+          <div className="space-y-2 p-4 bg-rose-500/10 border border-rose-500/30 rounded-lg animate-in fade-in-50">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="h-5 w-5 text-rose-500 shrink-0 mt-0.5" />
+              <div>
+                <h4 className="text-xs font-bold text-rose-600 dark:text-rose-400 uppercase tracking-wider">
+                  Lead solicitou descadastro (Não contatar)
+                </h4>
+                <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                  Este lead foi marcado com &quot;Solicitou descadastro&quot;. A geração e o envio de novas abordagens estão estritamente bloqueados para respeitar a decisão do cliente.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* CASO 1: Bloqueio por Falta de Decisor (Regra: Escolha obrigatória do sócio do QSA) */}
-        {!hasDecisor && (
+        {!lead.naoContatar && !hasDecisor && (
           <div className="space-y-4 p-4 bg-amber-500/10 border border-amber-500/30 rounded-lg animate-in fade-in-50">
             <div className="flex items-start gap-3">
               <AlertTriangle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
@@ -334,7 +351,7 @@ export function OutreachCopyDialog({
         )}
 
         {/* CASO 2: Bloqueio por Falta de Fatos Negativos Medidos (< 2 fatos) */}
-        {hasDecisor && !hasEnoughFacts && (
+        {!lead.naoContatar && hasDecisor && !hasEnoughFacts && (
           <div className="space-y-4 p-4 bg-muted/40 border border-border rounded-lg animate-in fade-in-50">
             <div className="flex items-start gap-3">
               <Activity className="h-5 w-5 text-primary shrink-0 mt-0.5" />
@@ -386,7 +403,7 @@ export function OutreachCopyDialog({
         )}
 
         {/* CASO 3: Rascunho Factual Pronto para Validação & Envio */}
-        {hasDecisor && hasEnoughFacts && currentDraft && (
+        {!lead.naoContatar && hasDecisor && hasEnoughFacts && currentDraft && (
           <div className="space-y-4 animate-in fade-in-50">
             {/* Status do Rascunho & Fatos Coletados */}
             <div className="flex items-center justify-between bg-muted/40 p-2.5 rounded-lg border border-border">

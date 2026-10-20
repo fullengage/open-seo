@@ -64,6 +64,7 @@ export function LeadEnrichmentModal({
   const [proximoPasso, setProximoPasso] = useState(lead.proximoPasso || "");
   const [dataProximoContato, setDataProximoContato] = useState(lead.dataProximoContato || "");
   const [notes, setNotes] = useState(lead.notes || "");
+  const [naoContatar, setNaoContatar] = useState(Boolean(lead.naoContatar));
 
   const [capitalSocial, setCapitalSocial] = useState<number | null>(lead.capitalSocial || null);
   const [porte, setPorte] = useState<string | null>(lead.porte || null);
@@ -141,6 +142,7 @@ export function LeadEnrichmentModal({
       cep,
       endereco,
       socios,
+      naoContatar,
       isEnriched: true,
     };
 
@@ -532,6 +534,24 @@ export function LeadEnrichmentModal({
                   onChange={(e) => setNotes(e.target.value)}
                   placeholder="Registre pontos levantados em reuniões, dores com a agência anterior, expectativas..."
                   className="min-h-[90px] text-xs"
+                />
+              </div>
+
+              <div className="md:col-span-2 p-3 rounded-lg border border-rose-500/30 bg-rose-500/5 flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-bold text-rose-600 dark:text-rose-400">
+                    Solicitou descadastro (Não contatar)
+                  </p>
+                  <p className="text-[10px] text-muted-foreground">
+                    Bloqueia novos e-mails e abordagens para este lead no sistema.
+                  </p>
+                </div>
+                <input
+                  type="checkbox"
+                  id="naoContatarInput"
+                  checked={naoContatar}
+                  onChange={(e) => setNaoContatar(e.target.checked)}
+                  className="h-4 w-4 accent-rose-600 cursor-pointer"
                 />
               </div>
             </div>

@@ -7,17 +7,19 @@ async function handleAuthRequest(request: Request) {
   if (!isHostedAuthMode(env.AUTH_MODE)) {
     const url = new URL(request.url);
     const cookieHeader = request.headers.get("cookie") || "";
+    const hasSessionCookie = cookieHeader.includes("openseo_session=");
     const isSignedOut = cookieHeader.includes("openseo_signed_out=true");
 
     if (url.pathname.endsWith("/get-session")) {
-      if (isSignedOut) {
+      if (!hasSessionCookie || isSignedOut) {
         return Response.json(null);
       }
       return Response.json({
         user: {
           id: "local-admin",
-          name: "Admin",
+          name: "Richard Wagner",
           email: "admin@localhost",
+          role: "admin",
           emailVerified: true,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
@@ -25,19 +27,26 @@ async function handleAuthRequest(request: Request) {
         session: {
           id: "local-session",
           userId: "local-admin",
-          expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
+          expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
         },
       });
     }
 
     if (url.pathname.endsWith("/sign-out")) {
+      const headers = new Headers();
+      headers.set("Content-Type", "application/json");
+      headers.append(
+        "Set-Cookie",
+        "openseo_session=; Path=/; SameSite=Lax; Max-Age=0; HttpOnly"
+      );
+      headers.append(
+        "Set-Cookie",
+        "openseo_signed_out=true; Path=/; SameSite=Lax; Max-Age=86400; HttpOnly"
+      );
+
       return new Response(JSON.stringify({ success: true }), {
         status: 200,
-        headers: {
-          "Content-Type": "application/json",
-          "Set-Cookie":
-            "openseo_signed_out=true; Path=/; SameSite=Lax; Max-Age=86400; HttpOnly",
-        },
+        headers,
       });
     }
 
@@ -56,38 +65,61 @@ async function handleAuthRequest(request: Request) {
 
       const configuredPassword =
         (Reflect.get(env, "ADMIN_PASSWORD") as string | undefined) ||
-        "Fla@30041975Wa02";
+        process.env.ADMIN_PASSWORD;
 
-      if (bodyPassword && configuredPassword && bodyPassword !== configuredPassword) {
+      if (!configuredPassword || configuredPassword.trim() === "") {
+        return Response.json(
+          { error: { message: "ADMIN_PASSWORD não configurada no servidor." } },
+          { status: 500 },
+        );
+      }
+
+      if (!bodyPassword || bodyPassword.trim() === "") {
+        return Response.json(
+          { error: { message: "Senha não informada." } },
+          { status: 401 },
+        );
+      }
+
+      if (bodyPassword !== configuredPassword) {
         return Response.json(
           { error: { message: "Senha incorreta. Verifique e tente novamente." } },
           { status: 401 },
         );
       }
 
+      const sessionToken = crypto.randomUUID();
+      const headers = new Headers();
+      headers.set("Content-Type", "application/json");
+      headers.append(
+        "Set-Cookie",
+        `openseo_session=${sessionToken}; Path=/; SameSite=Lax; Max-Age=2592000; HttpOnly`
+      );
+      headers.append(
+        "Set-Cookie",
+        "openseo_signed_out=; Path=/; SameSite=Lax; Max-Age=0; HttpOnly"
+      );
+
       return new Response(
         JSON.stringify({
           user: {
             id: "local-admin",
-            name: "Admin",
+            name: "Richard Wagner",
             email: "admin@localhost",
+            role: "admin",
             emailVerified: true,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
           },
           session: {
-            id: "local-session",
+            id: sessionToken,
             userId: "local-admin",
-            expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
+            expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
           },
         }),
         {
           status: 200,
-          headers: {
-            "Content-Type": "application/json",
-            "Set-Cookie":
-              "openseo_signed_out=; Path=/; SameSite=Lax; Max-Age=0; HttpOnly",
-          },
+          headers,
         },
       );
     }

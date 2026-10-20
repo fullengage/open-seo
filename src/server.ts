@@ -135,6 +135,26 @@ function fetch(
   return withPgClient(() => Promise.resolve(handleFetch(request, env, ctx)));
 }
 
+function isPublicPath(pathname: string): boolean {
+  if (
+    pathname === "/sign-in" ||
+    pathname === "/api/health" ||
+    pathname.startsWith("/api/auth/") ||
+    pathname.startsWith("/assets/") ||
+    pathname.startsWith("/favicon") ||
+    pathname.startsWith("/apple-touch-icon") ||
+    pathname === "/site.webmanifest" ||
+    pathname === "/robots.txt"
+  ) {
+    return true;
+  }
+  // Link público do diagnóstico compartilhado /s/<token>
+  if (pathname.startsWith("/s/")) {
+    return true;
+  }
+  return false;
+}
+
 function handleFetch(
   request: Request,
   env: Env,
@@ -144,6 +164,53 @@ function handleFetch(
   const publicRequest = requestWithPublicOrigin(request);
   const pathname = new URL(publicRequest.url).pathname;
   ctx.waitUntil(maybeSendSelfHostHeartbeat(pathname));
+
+  // 1. Proteção de Token para MCP (/mcp)
+  if (pathname === MCP_ROUTE || pathname === "/mcp") {
+    const authHeader = publicRequest.headers.get("authorization") || "";
+    const token = authHeader.replace(/^Bearer\s+/i, "").trim();
+    const validToken =
+      (Reflect.get(env, "MCP_TOKEN") as string | undefined) ||
+      (Reflect.get(env, "ADMIN_PASSWORD") as string | undefined) ||
+      process.env.MCP_TOKEN ||
+      process.env.ADMIN_PASSWORD;
+
+    if (!token || !validToken || token !== validToken) {
+      return new Response(
+        JSON.stringify({
+          jsonrpc: "2.0",
+          error: { code: -32001, message: "Unauthorized: Invalid or missing MCP token" },
+        }),
+        {
+          status: 401,
+          headers: { "Content-Type": "application/json" },
+        },
+      );
+    }
+  }
+
+  // 2. Middleware único de Autenticação para todas as rotas privadas
+  if (!isHostedAuthMode(authMode) && !isPublicPath(pathname)) {
+    const cookieHeader = publicRequest.headers.get("cookie") || "";
+    const hasSessionCookie = cookieHeader.includes("openseo_session=");
+    const isSignedOut = cookieHeader.includes("openseo_signed_out=true");
+
+    if (!hasSessionCookie || isSignedOut) {
+      if (pathname.startsWith("/api/")) {
+        return new Response(JSON.stringify({ error: "Unauthorized" }), {
+          status: 401,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+
+      return new Response(null, {
+        status: 302,
+        headers: {
+          Location: "/sign-in",
+        },
+      });
+    }
+  }
 
   if (pathname === "/api/ai-visibility/download") {
     return import("@/server/features/ai-visibility/services/aiVisibilityExport").then(

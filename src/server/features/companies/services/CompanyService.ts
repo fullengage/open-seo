@@ -39,6 +39,7 @@ export const CompanyService = {
         nomeFantasia: data.nome_fantasia || null,
         capitalSocial: data.capital_social || null,
         porte: data.porte || null,
+        matriz: data.identificador_matriz_filial === 1,
         cnae: String(data.cnae_fiscal || ""),
         cnaeDescricao: data.cnae_fiscal_descricao || null,
         uf: data.uf || "",
@@ -47,6 +48,8 @@ export const CompanyService = {
         cep: data.cep || null,
         telefone: data.ddd_telefone_1 || null,
         email: data.email || null,
+        situacaoCadastral: data.descricao_situacao_cadastral || data.situacao_cadastral || null,
+        filiais: [],
         socios: Array.isArray(data.qsa)
           ? data.qsa.map((s: any) => ({
               nome: s.nome_socio || "",
@@ -62,22 +65,46 @@ export const CompanyService = {
     }
   },
 
-  async searchBySegment(cnae: string, uf: string, limit = 20): Promise<CompanyDetail[]> {
+  async searchBySegment(
+    cnae: string,
+    uf: string,
+    limit = 50,
+    offset = 0,
+    options?: {
+      municipio?: string;
+      porte?: string;
+      matriz?: boolean;
+    }
+  ): Promise<{ items: CompanyDetail[]; total: number }> {
     const cleanCnae = cnae.replace(/\D/g, "");
-    if (!cleanCnae) return [];
+    if (!cleanCnae) return { items: [], total: 0 };
 
     try {
-      const res = await fetch(
-        `${DAEMON_URL}/segment?cnae=${encodeURIComponent(cleanCnae)}&uf=${encodeURIComponent(uf.toUpperCase())}&limit=${limit}`,
-        { signal: AbortSignal.timeout(4000) }
-      );
+      const params = new URLSearchParams({
+        cnae: cleanCnae,
+        uf: uf.toUpperCase(),
+        limit: String(limit),
+        offset: String(offset),
+      });
+
+      if (options?.municipio) params.append("municipio", options.municipio);
+      if (options?.porte) params.append("porte", options.porte);
+      if (options?.matriz !== undefined) params.append("matriz", options.matriz ? "1" : "0");
+
+      const res = await fetch(`${DAEMON_URL}/segment?${params.toString()}`, {
+        signal: AbortSignal.timeout(5000),
+      });
       if (res.ok) {
-        return (await res.json()) as CompanyDetail[];
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          return { items: data as CompanyDetail[], total: data.length };
+        }
+        return data as { items: CompanyDetail[]; total: number };
       }
     } catch (err) {
       console.error("CompanyService.searchBySegment error:", err);
     }
-    return [];
+    return { items: [], total: 0 };
   },
 
   async inspectWebsiteFacts(url: string, companyName: string) {

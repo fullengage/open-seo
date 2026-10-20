@@ -16,8 +16,12 @@ export const getCompanyByCnpj = createServerFn({ method: "POST" })
 export const searchCompaniesBySegment = createServerFn({ method: "POST" })
   .validator(companySearchSegmentInputSchema)
   .handler(async ({ data }) => {
-    if (!data.cnae || !data.uf) return [];
-    return CompanyService.searchBySegment(data.cnae, data.uf, data.limit);
+    if (!data.cnae || !data.uf) return { items: [], total: 0 };
+    return CompanyService.searchBySegment(data.cnae, data.uf, data.limit, data.offset, {
+      municipio: data.municipio || data.city,
+      porte: data.porte,
+      matriz: data.matriz,
+    });
   });
 
 const inspectWebsiteInputSchema = z.object({
@@ -30,4 +34,3 @@ export const inspectWebsiteForFacts = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     return CompanyService.inspectWebsiteFacts(data.url, data.companyName);
   });
-

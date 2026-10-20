@@ -83,6 +83,7 @@ export interface PipelineLead {
   // Diagnóstico de fatos medidos e Abordagem
   diagnostic?: LeadDiagnostic | null;
   draft?: OutreachDraft | null;
+  naoContatar?: boolean;
 }
 
 export interface ProgrammaticPage {
@@ -94,4 +95,91 @@ export interface ProgrammaticPage {
   bairro?: string;
   servico: string;
   schemaJson: string;
+}
+
+export function isRecuperacaoJudicialOuFalencia(razaoSocial?: string | null): boolean {
+  if (!razaoSocial) return false;
+  const upper = razaoSocial.toUpperCase();
+  return (
+    upper.includes("RECUPERACAO JUDICIAL") ||
+    upper.includes("RECUPERAÇÃO JUDICIAL") ||
+    upper.includes("FALIDO") ||
+    upper.includes("FALENCIA") ||
+    upper.includes("FALÊNCIA") ||
+    upper.includes("EM LIQUIDACAO") ||
+    upper.includes("EM LIQUIDAÇÃO")
+  );
+}
+
+export function checkEmailWarning(
+  email?: string | null,
+  website?: string | null
+): { isSuspicious: boolean; reason?: string } {
+  if (!email) return { isSuspicious: false };
+  const lower = email.toLowerCase().trim();
+
+  // (b) Palavras que indicam contador, advogado ou setor corporativo errado
+  const suspiciousKeywords = [
+    "contab",
+    "contabil",
+    "contabilidade",
+    "advog",
+    "advocacia",
+    "advogado",
+    "legal@",
+    "juridico",
+    "fiscal",
+    "financeiro",
+    "cobranca",
+    "rh@",
+    "dp@",
+    "dp.",
+    "contato@heroncont",
+  ];
+
+  for (const kw of suspiciousKeywords) {
+    if (lower.includes(kw)) {
+      return {
+        isSuspicious: true,
+        reason: "provável terceiro/setor errado — confirmar",
+      };
+    }
+  }
+
+  // (a) Se tiver website e o domínio não for o mesmo e não for webmail genérico
+  if (website) {
+    try {
+      const cleanUrl = website.startsWith("http") ? website : `https://${website}`;
+      const siteHost = new URL(cleanUrl).hostname.replace(/^www\./, "").toLowerCase();
+      const parts = lower.split("@");
+      if (parts.length === 2) {
+        const emailDomain = parts[1];
+        const commonWebmails = [
+          "gmail.com",
+          "hotmail.com",
+          "outlook.com",
+          "yahoo.com",
+          "uol.com.br",
+          "bol.com.br",
+          "terra.com.br",
+          "icloud.com",
+        ];
+        if (
+          !commonWebmails.includes(emailDomain) &&
+          emailDomain !== siteHost &&
+          !siteHost.includes(emailDomain) &&
+          !emailDomain.includes(siteHost)
+        ) {
+          return {
+            isSuspicious: true,
+            reason: "provável terceiro/setor errado — confirmar",
+          };
+        }
+      }
+    } catch {
+      // ignore URL parsing
+    }
+  }
+
+  return { isSuspicious: false };
 }

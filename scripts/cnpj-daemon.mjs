@@ -22,6 +22,19 @@ if (existsSync(dbPath)) {
   console.warn("[cnpj-daemon] DB file not found at:", dbPath);
 }
 
+const ALTO_TIETE_CODES = [
+  "6713", // Mogi das Cruzes
+  "7151", // Suzano
+  "6563", // Itaquaquecetuba
+  "6897", // Poá
+  "6415", // Ferraz de Vasconcelos
+  "6177", // Arujá
+  "7037", // Santa Isabel
+  "6467", // Guararema
+  "6231", // Biritiba-Mirim
+  "7001", // Salesópolis
+];
+
 const server = http.createServer((req, res) => {
   res.setHeader("Content-Type", "application/json");
   const url = new URL(req.url, `http://${req.headers.host || "127.0.0.1"}`);
@@ -46,7 +59,7 @@ const server = http.createServer((req, res) => {
         SELECT 
           e.cnpj, e.cnpj_basico, e.fantasia, emp.razao, emp.capital, emp.porte,
           e.cnae, c.descricao as cnae_desc, e.uf, m.nome as municipio_nome,
-          e.bairro, e.cep, e.tel, e.email
+          e.bairro, e.cep, e.tel, e.email, e.matriz
         FROM estab e
         JOIN empresa emp ON emp.cnpj_basico = e.cnpj_basico
         LEFT JOIN cnae c ON c.codigo = e.cnae
@@ -69,28 +82,54 @@ const server = http.createServer((req, res) => {
       `);
       const socios = sociosStmt.all(String(row.cnpj_basico));
 
-      res.end(JSON.stringify({
-        cnpj: String(row.cnpj),
-        cnpjBasico: String(row.cnpj_basico),
-        razaoSocial: String(row.razao),
-        nomeFantasia: row.fantasia ? String(row.fantasia) : null,
-        capitalSocial: row.capital ? Number(row.capital) : null,
-        porte: row.porte ? String(row.porte) : null,
-        cnae: String(row.cnae),
-        cnaeDescricao: row.cnae_desc ? String(row.cnae_desc) : null,
-        uf: String(row.uf),
-        municipio: row.municipio_nome ? String(row.municipio_nome) : null,
-        bairro: row.bairro ? String(row.bairro) : null,
-        cep: row.cep ? String(row.cep) : null,
-        telefone: row.tel ? String(row.tel) : null,
-        email: row.email ? String(row.email) : null,
-        socios: socios.map((s) => ({
-          nome: String(s.nome),
-          qualificacao: s.qualificacao ? String(s.qualificacao) : null,
-          qualificacaoDescricao: s.qualif_desc ? String(s.qualif_desc) : null,
-          entrada: s.entrada ? String(s.entrada) : null,
-        })),
-      }));
+      // Filiais caso seja matriz
+      let filiais = [];
+      if (row.matriz === 1) {
+        try {
+          const filiaisStmt = db.prepare(`
+            SELECT e.cnpj, e.fantasia, m.nome as municipio_nome, e.uf
+            FROM estab e
+            LEFT JOIN municipio m ON m.codigo = e.municipio
+            WHERE e.cnpj_basico = ? AND e.matriz = 2
+            LIMIT 10
+          `);
+          filiais = filiaisStmt.all(String(row.cnpj_basico)).map((f) => ({
+            cnpj: String(f.cnpj),
+            nomeFantasia: f.fantasia ? String(f.fantasia) : null,
+            municipio: f.municipio_nome ? String(f.municipio_nome) : null,
+            uf: String(f.uf),
+          }));
+        } catch {
+          // ignore
+        }
+      }
+
+      res.end(
+        JSON.stringify({
+          cnpj: String(row.cnpj),
+          cnpjBasico: String(row.cnpj_basico),
+          razaoSocial: String(row.razao),
+          nomeFantasia: row.fantasia ? String(row.fantasia) : null,
+          capitalSocial: row.capital ? Number(row.capital) : null,
+          porte: row.porte ? String(row.porte) : null,
+          matriz: row.matriz === 1,
+          cnae: String(row.cnae),
+          cnaeDescricao: row.cnae_desc ? String(row.cnae_desc) : null,
+          uf: String(row.uf),
+          municipio: row.municipio_nome ? String(row.municipio_nome) : null,
+          bairro: row.bairro ? String(row.bairro) : null,
+          cep: row.cep ? String(row.cep) : null,
+          telefone: row.tel ? String(row.tel) : null,
+          email: row.email ? String(row.email) : null,
+          filiais,
+          socios: socios.map((s) => ({
+            nome: String(s.nome),
+            qualificacao: s.qualificacao ? String(s.qualificacao) : null,
+            qualificacaoDescricao: s.qualif_desc ? String(s.qualif_desc) : null,
+            entrada: s.entrada ? String(s.entrada) : null,
+          })),
+        })
+      );
     } catch (e) {
       res.statusCode = 500;
       res.end(JSON.stringify({ error: e.message }));
@@ -102,35 +141,85 @@ const server = http.createServer((req, res) => {
     const rawCnae = url.searchParams.get("cnae") || "";
     const cleanCnae = rawCnae.replace(/\D/g, "");
     const uf = (url.searchParams.get("uf") || "").toUpperCase();
-    const limit = Math.min(Number(url.searchParams.get("limit") || 20), 50);
+    const limit = Math.min(Math.max(Number(url.searchParams.get("limit") || 50), 1), 100);
+    const offset = Math.max(Number(url.searchParams.get("offset") || 0), 0);
+    const municipioParam = (url.searchParams.get("municipio") || "").trim();
+    const porteParam = (url.searchParams.get("porte") || "").trim();
+    const soMatriz = url.searchParams.get("matriz") !== "false" && url.searchParams.get("matriz") !== "0";
 
     if (!cleanCnae || !uf) {
       res.statusCode = 400;
-      res.end(JSON.stringify([]));
+      res.end(JSON.stringify({ items: [], total: 0 }));
       return;
     }
 
     try {
-      const stmt = db.prepare(`
+      const whereClauses = ["e.cnae = ?", "e.uf = ?"];
+      const params = [cleanCnae, uf];
+
+      if (soMatriz) {
+        whereClauses.push("e.matriz = 1");
+      }
+
+      if (porteParam) {
+        whereClauses.push("emp.porte = ?");
+        params.push(porteParam);
+      }
+
+      if (municipioParam) {
+        if (municipioParam.toUpperCase() === "ALTO_TIETE") {
+          whereClauses.push(`e.municipio IN (${ALTO_TIETE_CODES.map((c) => `'${c}'`).join(",")})`);
+        } else if (/^\d+$/.test(municipioParam)) {
+          whereClauses.push("e.municipio = ?");
+          params.push(municipioParam);
+        } else {
+          // Resolve municipality code by name
+          const munRow = db
+            .prepare("SELECT codigo FROM municipio WHERE nome LIKE ? LIMIT 1")
+            .get(`%${municipioParam.toUpperCase()}%`);
+          if (munRow && munRow.codigo) {
+            whereClauses.push("e.municipio = ?");
+            params.push(munRow.codigo);
+          }
+        }
+      }
+
+      const whereSql = whereClauses.join(" AND ");
+
+      // 1. Total count
+      const countStmt = db.prepare(`
+        SELECT count(*) as total
+        FROM estab e
+        JOIN empresa emp ON emp.cnpj_basico = e.cnpj_basico
+        WHERE ${whereSql}
+      `);
+      const totalRow = countStmt.get(...params);
+      const total = totalRow ? Number(totalRow.total) : 0;
+
+      // 2. Items query with LIMIT & OFFSET
+      const itemsStmt = db.prepare(`
         SELECT 
           e.cnpj, e.cnpj_basico, e.fantasia, emp.razao, emp.capital, emp.porte,
           e.cnae, c.descricao as cnae_desc, e.uf, m.nome as municipio_nome,
-          e.bairro, e.cep, e.tel, e.email
+          e.bairro, e.cep, e.tel, e.email, e.matriz
         FROM estab e
         JOIN empresa emp ON emp.cnpj_basico = e.cnpj_basico
         LEFT JOIN cnae c ON c.codigo = e.cnae
         LEFT JOIN municipio m ON m.codigo = e.municipio
-        WHERE (e.cnae = ? OR e.cnae LIKE ?) AND e.uf = ?
-        LIMIT ?
+        WHERE ${whereSql}
+        ORDER BY emp.capital DESC
+        LIMIT ? OFFSET ?
       `);
-      const rows = stmt.all(cleanCnae, `${cleanCnae}%`, uf, limit);
-      res.end(JSON.stringify(rows.map((row) => ({
+      const rows = itemsStmt.all(...params, limit, offset);
+
+      const items = rows.map((row) => ({
         cnpj: String(row.cnpj),
         cnpjBasico: String(row.cnpj_basico),
         razaoSocial: String(row.razao),
         nomeFantasia: row.fantasia ? String(row.fantasia) : null,
         capitalSocial: row.capital ? Number(row.capital) : null,
         porte: row.porte ? String(row.porte) : null,
+        matriz: row.matriz === 1,
         cnae: String(row.cnae),
         cnaeDescricao: row.cnae_desc ? String(row.cnae_desc) : null,
         uf: String(row.uf),
@@ -140,10 +229,12 @@ const server = http.createServer((req, res) => {
         telefone: row.tel ? String(row.tel) : null,
         email: row.email ? String(row.email) : null,
         socios: [],
-      }))));
+      }));
+
+      res.end(JSON.stringify({ items, total }));
     } catch (e) {
       res.statusCode = 500;
-      res.end(JSON.stringify({ error: e.message }));
+      res.end(JSON.stringify({ error: e.message, items: [], total: 0 }));
     }
     return;
   }

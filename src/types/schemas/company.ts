@@ -8,7 +8,11 @@ export const companySearchSegmentInputSchema = z.object({
   cnae: z.string().optional(),
   uf: z.string().length(2).optional(),
   city: z.string().optional(),
-  limit: z.number().min(1).max(100).default(20),
+  municipio: z.string().optional(),
+  porte: z.string().optional(),
+  matriz: z.boolean().default(true),
+  limit: z.number().min(1).max(100).default(50),
+  offset: z.number().min(0).default(0),
 });
 
 export const companySocioSchema = z.object({
@@ -18,6 +22,13 @@ export const companySocioSchema = z.object({
   entrada: z.string().nullable().optional(),
 });
 
+export const companyFilialSchema = z.object({
+  cnpj: z.string(),
+  nomeFantasia: z.string().nullable().optional(),
+  municipio: z.string().nullable().optional(),
+  uf: z.string().nullable().optional(),
+});
+
 export const companyDetailSchema = z.object({
   cnpj: z.string(),
   cnpjBasico: z.string(),
@@ -25,6 +36,7 @@ export const companyDetailSchema = z.object({
   nomeFantasia: z.string().nullable().optional(),
   capitalSocial: z.number().nullable().optional(),
   porte: z.string().nullable().optional(),
+  matriz: z.boolean().optional(),
   cnae: z.string(),
   cnaeDescricao: z.string().nullable().optional(),
   uf: z.string(),
@@ -33,8 +45,11 @@ export const companyDetailSchema = z.object({
   cep: z.string().nullable().optional(),
   telefone: z.string().nullable().optional(),
   email: z.string().nullable().optional(),
+  situacaoCadastral: z.string().nullable().optional(),
+  filiais: z.array(companyFilialSchema).optional().default([]),
   socios: z.array(companySocioSchema).default([]),
 });
 
 export type CompanyDetail = z.infer<typeof companyDetailSchema>;
 export type CompanySocio = z.infer<typeof companySocioSchema>;
+export type CompanyFilial = z.infer<typeof companyFilialSchema>;
