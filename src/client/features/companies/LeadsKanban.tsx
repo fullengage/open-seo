@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { calcIcpScore } from "./icpScore";
+import { hasEnoughFacts as factsAreEnough } from "./factsGenerator";
 import {
   Kanban,
   Building2,
@@ -353,11 +354,11 @@ export function LeadsKanban() {
                 <div className="space-y-3 flex-1 overflow-y-auto">
                   {colLeads.map((lead) => {
                     const cleanWhatsapp = (lead.whatsapp || lead.telefone || "").replace(/\D/g, "");
-                    const decisorDisplay = lead.decisorNome || lead.socioPrincipal;
+                    const decisorDisplay = lead.decisorNome;
                     const negativeFacts = (lead.diagnostic?.facts || []).filter(
                       (f) => f.category === "negative"
                     );
-                    const hasEnoughFacts = negativeFacts.length >= 2;
+                    const hasEnoughFacts = factsAreEnough(lead.diagnostic?.facts || []);
                     const hasApprovedDraft = lead.draft?.status === "approved";
                     const isRecuperacao = isRecuperacaoJudicialOuFalencia(lead.razaoSocial);
                     const emailWarning = checkEmailWarning(lead.decisorEmail || lead.email, lead.website);

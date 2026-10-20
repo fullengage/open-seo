@@ -111,6 +111,14 @@ export const CompanyService = {
     const formattedUrl = url.startsWith("http") ? url : `https://${url}`;
     const nowIso = new Date().toISOString();
     const facts: any[] = [];
+    let siteUnavailable = false;
+    const host = (() => {
+      try {
+        return new URL(formattedUrl).hostname.replace(/^www\./, "");
+      } catch {
+        return formattedUrl;
+      }
+    })();
 
     try {
       const response = await fetch(formattedUrl, {
@@ -122,8 +130,40 @@ export const CompanyService = {
         signal: AbortSignal.timeout(6000),
       });
 
-      if (response.ok) {
-        const html = await response.text();
+      const html = await response.text().catch(() => "");
+      const finalUrl = response.url || formattedUrl;
+      const isCritical = /Há um erro crítico no seu site|There has been a critical error on (this|your) website/i.test(html);
+      const isParked =
+        /\/lander\b/.test(finalUrl) ||
+        /está hospedado gratuitamente, cortesia da GoDaddy|Adquira este domínio|This domain is parked|domain is for sale/i.test(html);
+
+      if (!response.ok || isCritical) {
+        siteUnavailable = true;
+        facts.push({
+          id: `fact-down-${Date.now()}`,
+          type: "site_down",
+          category: "negative",
+          source: "Crawler",
+          date: nowIso,
+          value: isCritical ? "erro crítico do WordPress" : `HTTP ${response.status}`,
+          phrase: isCritical
+            ? `Quando abri ${host} hoje, o site mostrou a mensagem "Há um erro crítico no seu site" e não carregou para o visitante.`
+            : `Quando abri ${host} hoje, o site mostrou um erro e não carregou para o visitante.`,
+        });
+      } else if (isParked) {
+        siteUnavailable = true;
+        facts.push({
+          id: `fact-parked-${Date.now()}`,
+          type: "parked_domain",
+          category: "negative",
+          source: "Crawler",
+          date: nowIso,
+          value: host,
+          phrase: `O endereço ${host} hoje mostra uma página do provedor de domínio, e não o site da ${companyName}.`,
+        });
+      }
+
+      if (response.ok && !isCritical && !isParked) {
 
         // 1. Meta Description
         const descMatch =
@@ -204,12 +244,22 @@ export const CompanyService = {
         }
       }
     } catch {
-      // Ignora falha de crawl da URL
+      // Não abriu (DNS, timeout, certificado): para o visitante é site fora do ar
+      siteUnavailable = true;
+      facts.push({
+        id: `fact-down-${Date.now()}`,
+        type: "site_down",
+        category: "negative",
+        source: "Crawler",
+        date: nowIso,
+        value: "não abriu",
+        phrase: `Quando tentei abrir ${host} hoje, o site não carregou.`,
+      });
     }
 
     // 5. PageSpeed (celular) com a chave da plataforma: LCP > 4 s vira fato
     const psiKey = process.env.GOOGLE_PAGESPEED_API_KEY;
-    if (psiKey) {
+    if (psiKey && !siteUnavailable) {
       try {
         const psiUrl = new URL("https://www.googleapis.com/pagespeedonline/v5/runPagespeed");
         psiUrl.searchParams.set("url", formattedUrl);

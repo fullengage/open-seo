@@ -16,7 +16,9 @@ export interface LeadFact {
     | "slow_lcp_mobile"
     | "no_structured_data"
     | "not_in_top_10"
-    | "high_google_rating";
+    | "high_google_rating"
+    | "site_down"
+    | "parked_domain";
   category: "negative" | "positive" | "diagnostic_only";
   source: "Crawler" | "PageSpeed" | "SERP (Apify)" | "Perfil Google (Apify)";
   date: string;

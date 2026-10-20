@@ -23,7 +23,7 @@ import { Badge } from "@/client/components/ui/badge";
 import { Input } from "@/client/components/ui/input";
 import { toast } from "sonner";
 import type { PipelineLead, LeadFact, OutreachDraft } from "./types";
-import { generateMeasuredOutreach, validateAiRewrite } from "./factsGenerator";
+import { generateMeasuredOutreach, validateAiRewrite, hasEnoughFacts as factsAreEnough } from "./factsGenerator";
 import { inspectWebsiteForFacts } from "@/serverFunctions/companies";
 
 interface OutreachCopyDialogProps {
@@ -69,7 +69,7 @@ export function OutreachCopyDialog({
   if (!isOpen) return null;
 
   const negativeFacts = (lead.diagnostic?.facts || []).filter((f) => f.category === "negative");
-  const hasEnoughFacts = negativeFacts.length >= 2;
+  const hasEnoughFacts = factsAreEnough(lead.diagnostic?.facts || []);
   const hasDecisor = Boolean(selectedDecisor && selectedDecisor.trim());
 
   // Ação: Selecionar o Tomador de Decisão do QSA

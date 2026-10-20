@@ -47,7 +47,7 @@ export function LeadEnrichmentModal({
   const [isAutoEnriching, setIsAutoEnriching] = useState(false);
 
   // Form states
-  const [decisorNome, setDecisorNome] = useState(lead.decisorNome || lead.socioPrincipal || "");
+  const [decisorNome, setDecisorNome] = useState(lead.decisorNome || "");
   const [decisorCargo, setDecisorCargo] = useState(lead.decisorCargo || "Sócio-Administrador");
   const [whatsapp, setWhatsapp] = useState(lead.whatsapp || lead.telefone || "");
   const [decisorEmail, setDecisorEmail] = useState(lead.decisorEmail || lead.email || "");
