@@ -5,6 +5,7 @@ git pull origin main
 CID=$(docker ps -q -f name=openseo_openseo | head -n 1)
 echo "Found container: $CID"
 docker cp src "${CID}:/app/"
+docker cp scripts "${CID}:/app/"
 echo "Building inside container..."
 docker exec -w /app "$CID" pnpm build
 echo "Committing image..."
