@@ -64,7 +64,12 @@ async function handleLocalAuth(request: Request): Promise<Response> {
     const user = await chatwootUserFromTokens(tokens);
     if (!user) return unauthorized("Sessão do Chatwoot inválida.");
     const accountId = typeof body.accountId === "number" ? body.accountId : null;
-    return withSession(sessionFromChatwoot(user, accountId), { ok: true, name: user.name });
+    const cw = {
+      token: String(tokens["access-token"]),
+      client: String(tokens.client),
+      uid: String(tokens.uid),
+    };
+    return withSession(sessionFromChatwoot(user, accountId, cw), { ok: true, name: user.name });
   }
 
   if (path.endsWith("/sign-in") || path.endsWith("/sign-in/email") || path.endsWith("/sign-in/local")) {
@@ -75,9 +80,12 @@ async function handleLocalAuth(request: Request): Promise<Response> {
 
     // Usuário do Chatwoot (mesmo e-mail e senha)
     if (email && email !== "admin@localhost") {
-      const user = await chatwootSignIn(email, password);
-      if (!user) return unauthorized("E-mail ou senha incorretos.");
-      return withSession(sessionFromChatwoot(user), { user: { id: `cw-${user.id}`, name: user.name, email: user.email } });
+      const result = await chatwootSignIn(email, password);
+      if (!result) return unauthorized("E-mail ou senha incorretos.");
+      const { user, tokens } = result;
+      return withSession(sessionFromChatwoot(user, null, tokens), {
+        user: { id: `cw-${user.id}`, name: user.name, email: user.email },
+      });
     }
 
     // Reserva: senha de admin (ponytail: some quando todos entrarem pelo Chatwoot)

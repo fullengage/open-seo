@@ -39,6 +39,7 @@ import type { PipelineLead, PipelineStage, LeadFact } from "./types";
 import { isRecuperacaoJudicialOuFalencia, checkEmailWarning } from "./types";
 import { OutreachCopyDialog } from "./OutreachCopyDialog";
 import { LeadEnrichmentModal } from "./LeadEnrichmentModal";
+import { LeadConversationsDialog } from "./LeadConversationsDialog";
 import {
   getPipelineLeads,
   savePipelineLead,
@@ -63,6 +64,7 @@ export function LeadsKanban() {
   const [localMigrationCount, setLocalMigrationCount] = useState<number>(0);
   const [isMigrating, setIsMigrating] = useState(false);
   const [activeOutreachLead, setActiveOutreachLead] = useState<PipelineLead | null>(null);
+  const [activeConversationsLead, setActiveConversationsLead] = useState<PipelineLead | null>(null);
   const [activeEnrichLead, setActiveEnrichLead] = useState<PipelineLead | null>(null);
 
   async function loadLeadsFromDb() {
@@ -575,6 +577,19 @@ export function LeadsKanban() {
                               Editar
                             </Button>
 
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-6 text-[10px] px-1.5 font-semibold text-foreground border-border hover:bg-muted"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setActiveConversationsLead(lead);
+                              }}
+                              title="Conversas do lead no ChatHook"
+                            >
+                              Conversas
+                            </Button>
+
                             {/* Botão Gerar Abordagem (conforme Spec: Fatos Medidos) */}
                             <Button
                               variant={hasEnoughFacts ? "default" : "outline"}
@@ -685,6 +700,12 @@ export function LeadsKanban() {
       )}
 
       {/* Dialog: Gerador de Abordagem só com Fatos Medidos */}
+      {activeConversationsLead && (
+        <LeadConversationsDialog
+          lead={activeConversationsLead}
+          onClose={() => setActiveConversationsLead(null)}
+        />
+      )}
       {activeOutreachLead && (
         <OutreachCopyDialog
           lead={activeOutreachLead}

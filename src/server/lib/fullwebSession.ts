@@ -13,6 +13,7 @@ export interface FullwebSession {
   accountId: number | null;
   role: "admin" | "administrator" | "agent";
   src: "chatwoot" | "admin";
+  cw?: { token: string; client: string; uid: string };
   exp: number;
 }
 
@@ -72,7 +73,12 @@ export async function chatwootUserFromTokens(t: Record<string, unknown>): Promis
 }
 
 /** Acesso direto (fora do Chatwoot) com o mesmo e-mail e senha do Chatwoot. */
-export async function chatwootSignIn(email: string, password: string): Promise<CwUser | null> {
+export type CwTokens = { token: string; client: string; uid: string };
+
+export async function chatwootSignIn(
+  email: string,
+  password: string,
+): Promise<{ user: CwUser; tokens: CwTokens | undefined } | null> {
   const r = await fetch(`${CHATWOOT_URL}/auth/sign_in`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -80,10 +86,14 @@ export async function chatwootSignIn(email: string, password: string): Promise<C
   });
   if (!r.ok) return null;
   const j = (await r.json()) as { data?: CwUser };
-  return j.data || null;
+  if (!j.data) return null;
+  const token = r.headers.get("access-token");
+  const client = r.headers.get("client");
+  const uid = r.headers.get("uid");
+  return { user: j.data, tokens: token && client && uid ? { token, client, uid } : undefined };
 }
 
-export function sessionFromChatwoot(u: CwUser, preferredAccountId?: number | null): string {
+export function sessionFromChatwoot(u: CwUser, preferredAccountId?: number | null, cw?: CwTokens): string {
   const accounts = u.accounts || [];
   const acc = accounts.find((a) => a.id === preferredAccountId) || accounts[0] || null;
   return signSession({
@@ -93,5 +103,6 @@ export function sessionFromChatwoot(u: CwUser, preferredAccountId?: number | nul
     accountId: acc?.id ?? null,
     role: acc?.role === "administrator" ? "administrator" : "agent",
     src: "chatwoot",
+    cw,
   });
 }
