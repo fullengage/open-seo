@@ -176,10 +176,7 @@ const server = http.createServer((req, res) => {
     const municipioParam = (url.searchParams.get("municipio") || "").trim();
     const porteParam = (url.searchParams.get("porte") || "").trim();
     const soMatriz = url.searchParams.get("matriz") !== "false" && url.searchParams.get("matriz") !== "0";
-    const sitJoin =
-      ensureSituacao() && url.searchParams.get("situacao") !== "todas"
-        ? "JOIN s.situacao st ON st.cnpj = e.cnpj AND st.sit = '02'"
-        : "";
+    // ponytail: a base principal já só tem ativas (importada com situação 02); a situação serve à ficha
 
     if (!cleanCnae || !uf) {
       res.statusCode = 400;
@@ -225,7 +222,6 @@ const server = http.createServer((req, res) => {
         SELECT count(*) as total
         FROM estab e
         JOIN empresa emp ON emp.cnpj_basico = e.cnpj_basico
-        ${sitJoin}
         WHERE ${whereSql}
       `);
       const totalRow = countStmt.get(...params);
@@ -241,7 +237,6 @@ const server = http.createServer((req, res) => {
         JOIN empresa emp ON emp.cnpj_basico = e.cnpj_basico
         LEFT JOIN cnae c ON c.codigo = e.cnae
         LEFT JOIN municipio m ON m.codigo = e.municipio
-        ${sitJoin}
         WHERE ${whereSql}
         ORDER BY emp.capital DESC
         LIMIT ? OFFSET ?
