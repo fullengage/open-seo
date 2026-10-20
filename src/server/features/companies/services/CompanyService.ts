@@ -156,7 +156,7 @@ export const CompanyService = {
         } else {
           const h1Text = h1Match[1].replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim();
           const lowerH1 = h1Text.toLowerCase();
-          const genericTerms = ["home", "início", "inicio", "bem-vindo", "bem vindo", companyName.toLowerCase()];
+          const genericTerms = ["home", "início", "inicio", "bem-vindo", "bem vindo", "contato", "contatos", "fale conosco", companyName.toLowerCase()];
           if (h1Text.length < 4 || genericTerms.includes(lowerH1)) {
             facts.push({
               id: `fact-h1-${Date.now()}`,
@@ -205,6 +205,53 @@ export const CompanyService = {
       }
     } catch {
       // Ignora falha de crawl da URL
+    }
+
+    // 5. PageSpeed (celular) com a chave da plataforma: LCP > 4 s vira fato
+    const psiKey = process.env.GOOGLE_PAGESPEED_API_KEY;
+    if (psiKey) {
+      try {
+        const psiUrl = new URL("https://www.googleapis.com/pagespeedonline/v5/runPagespeed");
+        psiUrl.searchParams.set("url", formattedUrl);
+        psiUrl.searchParams.set("strategy", "MOBILE");
+        psiUrl.searchParams.set("category", "PERFORMANCE");
+        psiUrl.searchParams.set("key", psiKey);
+        const psiRes = await fetch(psiUrl.toString(), { signal: AbortSignal.timeout(60_000) });
+        if (psiRes.ok) {
+          const psi = (await psiRes.json()) as {
+            lighthouseResult?: {
+              audits?: Record<string, { numericValue?: number }>;
+              categories?: { performance?: { score?: number | null } };
+            };
+          };
+          const lcpMs = psi.lighthouseResult?.audits?.["largest-contentful-paint"]?.numericValue;
+          const perf = psi.lighthouseResult?.categories?.performance?.score;
+          if (typeof lcpMs === "number" && lcpMs > 4000) {
+            const secs = (lcpMs / 1000).toFixed(1).replace(".", ",");
+            facts.push({
+              id: `fact-lcp-${Date.now()}`,
+              type: "slow_lcp_mobile",
+              category: "negative",
+              source: "PageSpeed",
+              date: nowIso,
+              value: `${secs} s`,
+              phrase: `No celular, a página inicial levou ${secs} segundos para carregar o conteúdo principal no teste do Google (PageSpeed).`,
+            });
+          } else if (typeof perf === "number") {
+            facts.push({
+              id: `fact-psi-${Date.now()}`,
+              type: "slow_lcp_mobile",
+              category: "diagnostic_only",
+              source: "PageSpeed",
+              date: nowIso,
+              value: Math.round(perf * 100),
+              phrase: `PageSpeed no celular: ${Math.round(perf * 100)}.`,
+            });
+          }
+        }
+      } catch {
+        // PageSpeed indisponível: segue só com os fatos do crawler
+      }
     }
 
     return {

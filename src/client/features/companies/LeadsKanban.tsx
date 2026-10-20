@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { calcIcpScore } from "./icpScore";
 import {
   Kanban,
   Building2,
@@ -374,6 +375,24 @@ export function LeadsKanban() {
                             </p>
                           </div>
 
+                          {(() => {
+                            const icp = calcIcpScore(lead);
+                            const tone =
+                              icp.score >= 60
+                                ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-500"
+                                : icp.score >= 40
+                                  ? "border-amber-500/40 bg-amber-500/10 text-amber-500"
+                                  : "border-muted-foreground/30 text-muted-foreground";
+                            return (
+                              <Badge
+                                variant="outline"
+                                title={icp.reasons.join("\n")}
+                                className={`text-[9px] px-1 py-0 h-4 font-bold ${tone}`}
+                              >
+                                ICP {icp.score}
+                              </Badge>
+                            );
+                          })()}
                           {lead.temperatura === "hot" && (
                             <Badge
                               variant="outline"
