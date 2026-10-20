@@ -26,7 +26,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/cli
 import { Badge } from "@/client/components/ui/badge";
 import { toast } from "sonner";
 import { getCompanyByCnpj, searchCompaniesBySegment } from "@/serverFunctions/companies";
-import { savePipelineLead } from "@/serverFunctions/pipelineLeads";
+import { getPipelineLeads, savePipelineLead } from "@/serverFunctions/pipelineLeads";
 import type { CompanyDetail } from "@/types/schemas/company";
 import type { PipelineLead } from "@/client/features/companies/types";
 import { isRecuperacaoJudicialOuFalencia, checkEmailWarning } from "@/client/features/companies/types";
@@ -176,12 +176,10 @@ export function CompaniesPage() {
       if (!confirmAdd) return;
     }
 
-    const storageKey = "openseo_b2b_pipeline_leads";
     try {
-      const saved = localStorage.getItem(storageKey);
-      const localLeads: PipelineLead[] = saved ? JSON.parse(saved) : [];
-
-      if (localLeads.some((l) => l.cnpj === targetCompany.cnpj)) {
+      // O banco é a única fonte: nada de cópia no navegador (gerava importação de versão velha)
+      const existing = await getPipelineLeads();
+      if (existing.some((l) => l.cnpj === targetCompany.cnpj)) {
         toast.info("Esta empresa já está no Pipeline Comercial!");
         return;
       }
@@ -198,20 +196,23 @@ export function CompaniesPage() {
         cnae: targetCompany.cnae,
         cnaeDescricao: targetCompany.cnaeDescricao,
         socioPrincipal: targetCompany.socios?.[0]?.nome || null,
+        porte: targetCompany.porte ?? null,
+        capitalSocial: targetCompany.capitalSocial ?? null,
+        bairro: targetCompany.bairro ?? null,
+        cep: targetCompany.cep ?? null,
+        socios: (targetCompany.socios || []).map((s) => ({
+          nome: s.nome,
+          qualificacaoDescricao: s.qualificacaoDescricao ?? null,
+        })),
         stage: "prospect",
         createdAt: new Date().toISOString(),
       };
 
-      // Salva no banco de dados central PostgreSQL (Item 2)
-      try {
-        await savePipelineLead({ data: { lead: newLead } });
-      } catch (err) {
-        console.error("Erro ao salvar lead no PostgreSQL:", err);
+      const res = await savePipelineLead({ data: { lead: newLead } });
+      if (res?.success === false) {
+        toast.error("Não foi possível salvar no banco. Tente de novo.");
+        return;
       }
-
-      // Atualiza também localmente para sincronia imediata
-      const updated = [newLead, ...localLeads];
-      localStorage.setItem(storageKey, JSON.stringify(updated));
       toast.success(
         `${targetCompany.nomeFantasia || targetCompany.razaoSocial} adicionada ao Pipeline Comercial!`
       );

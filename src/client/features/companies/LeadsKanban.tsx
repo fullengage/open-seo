@@ -110,7 +110,15 @@ export function LeadsKanban() {
       if (res.success) {
         localStorage.removeItem(STORAGE_KEY);
         setLocalMigrationCount(0);
-        toast.success(`${res.count || parsed.length} leads importados para o banco com sucesso!`);
+        {
+          const imported = res.count ?? 0;
+          const skipped = parsed.length - imported;
+          toast.success(
+            skipped > 0
+              ? `${imported} leads importados; ${skipped} já estavam no banco e foram mantidos como estão.`
+              : `${imported} leads importados para o banco com sucesso!`,
+          );
+        }
         await loadLeadsFromDb();
       } else {
         toast.error("Erro ao migrar leads para o banco.");

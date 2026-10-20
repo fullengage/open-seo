@@ -127,10 +127,19 @@ export const PipelineLeadService = {
   },
 
   async importLeads(leads: PipelineLead[], organizationId = "default-org"): Promise<number> {
+    const existing = await this.listLeads(organizationId);
+    const ids = new Set(existing.map((l) => l.id));
+    const cnpjs = new Set(existing.map((l) => l.cnpj));
     let count = 0;
     for (const lead of leads) {
+      // ponytail: o banco ganha sempre; cópia do navegador só entra se o lead não existir
+      if (ids.has(lead.id) || cnpjs.has(lead.cnpj)) continue;
       const ok = await this.saveLead(lead, organizationId);
-      if (ok) count++;
+      if (ok) {
+        count++;
+        ids.add(lead.id);
+        cnpjs.add(lead.cnpj);
+      }
     }
     return count;
   },
