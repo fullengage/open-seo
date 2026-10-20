@@ -181,7 +181,11 @@ export function LeadsKanban() {
     setLeads(updated);
 
     try {
-      await savePipelineLead({ data: { lead: updatedLead } });
+      const res = await savePipelineLead({ data: { lead: updatedLead } });
+      if (res?.success === false) {
+        toast.error("Não foi possível salvar no banco. Tente de novo.");
+        return;
+      }
       toast.success("Dados salvos no banco com sucesso!");
     } catch (err) {
       console.error("Erro ao salvar lead:", err);

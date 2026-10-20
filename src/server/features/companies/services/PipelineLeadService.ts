@@ -1,80 +1,74 @@
 import postgres from "postgres";
 import type { PipelineLead, PipelineStage } from "@/client/features/companies/types";
 
-let cachedSql: postgres.Sql | null = null;
-
-function getSql(): postgres.Sql | null {
-  if (cachedSql) return cachedSql;
+/**
+ * Uma conexão por chamada. O runtime (workerd) não deixa reaproveitar o socket
+ * aberto em outra requisição ("Cannot perform I/O on behalf of a different
+ * request"), então um cliente em cache só funcionava na primeira gravação.
+ * ponytail: conexão nova por chamada; trocar por Hyperdrive/pool se o volume crescer.
+ */
+async function withSql<T>(label: string, fallback: T, fn: (sql: postgres.Sql) => Promise<T>): Promise<T> {
   const url = process.env.POSTGRES_DATABASE_URL;
-  if (!url) return null;
+  if (!url) return fallback;
+  const sql = postgres(url, { max: 1, idle_timeout: 5 });
   try {
-    cachedSql = postgres(url, { max: 10, idle_timeout: 20 });
-    return cachedSql;
+    return await fn(sql);
   } catch (err) {
-    console.error("PipelineLeadService: failed to connect to Postgres:", err);
-    return null;
+    console.error(`PipelineLeadService.${label} error:`, err);
+    return fallback;
+  } finally {
+    await sql.end({ timeout: 2 }).catch(() => {});
   }
 }
 
+const parseJson = (v: unknown) => (v ? (typeof v === "string" ? JSON.parse(v) : v) : null);
+
 export const PipelineLeadService = {
   async listLeads(organizationId = "default-org"): Promise<PipelineLead[]> {
-    const sql = getSql();
-    if (!sql) return [];
-
-    try {
+    return withSql("listLeads", [] as PipelineLead[], async (sql) => {
       const rows = await sql`
         SELECT * FROM pipeline_leads
         WHERE organization_id = ${organizationId}
         ORDER BY criado_em DESC
       `;
 
-      return rows.map((r: any) => ({
+      return rows.map((r: any) => {
         // Lead completo (porte, capital, UF, cidade, CNAE, sócios...); as colunas valem por cima
-        ...(r.dados ? (typeof r.dados === "string" ? JSON.parse(r.dados) : r.dados) : {}),
-        id: r.id,
-        cnpj: r.cnpj,
-        razaoSocial: r.dados?.razaoSocial || r.empresa,
-        nomeFantasia: r.dados?.nomeFantasia ?? r.empresa,
-        uf: r.dados?.uf || "",
-        stage: r.etapa as PipelineStage,
-        decisorNome: r.decisor_nome || null,
-        decisorCargo: r.decisor_cargo || null,
-        email: r.email || null,
-        telefone: r.telefone || null,
-        whatsapp: r.telefone || null,
-        linkedin: r.linkedin || null,
-        decisorLinkedin: r.linkedin || null,
-        website: r.site || null,
-        temperatura: r.temperatura || "warm",
-        ticketEstimado: r.ticket ? Number(r.ticket) : null,
-        proximoPasso: r.proxima_acao || null,
-        dataProximoContato: r.proximo_contato || null,
-        notes: r.notas || undefined,
-        diagnostic: r.diagnostic
-          ? typeof r.diagnostic === "string"
-            ? JSON.parse(r.diagnostic)
-            : r.diagnostic
-          : null,
-        draft: r.draft
-          ? typeof r.draft === "string"
-            ? JSON.parse(r.draft)
-            : r.draft
-          : null,
-        naoContatar: Boolean(r.nao_contatar),
-        createdAt: r.criado_em ? new Date(r.criado_em).toISOString() : new Date().toISOString(),
-        isEnriched: Boolean(r.decisor_nome || r.site || r.ticket || r.diagnostic),
-      }));
-    } catch (err) {
-      console.error("PipelineLeadService.listLeads error:", err);
-      return [];
-    }
+        const dados = (parseJson(r.dados) || {}) as Partial<PipelineLead>;
+        return {
+          ...dados,
+          id: r.id,
+          cnpj: r.cnpj,
+          razaoSocial: dados.razaoSocial || r.empresa,
+          nomeFantasia: dados.nomeFantasia ?? r.empresa,
+          uf: dados.uf || "",
+          stage: r.etapa as PipelineStage,
+          decisorNome: r.decisor_nome || null,
+          decisorCargo: r.decisor_cargo || null,
+          email: dados.email ?? r.email ?? null,
+          decisorEmail: dados.decisorEmail ?? null,
+          telefone: r.telefone || null,
+          whatsapp: dados.whatsapp ?? r.telefone ?? null,
+          linkedin: r.linkedin || null,
+          decisorLinkedin: dados.decisorLinkedin ?? r.linkedin ?? null,
+          website: r.site || null,
+          temperatura: r.temperatura || "warm",
+          ticketEstimado: r.ticket ? Number(r.ticket) : null,
+          proximoPasso: r.proxima_acao || null,
+          dataProximoContato: r.proximo_contato || null,
+          notes: r.notas || undefined,
+          diagnostic: parseJson(r.diagnostic),
+          draft: parseJson(r.draft),
+          naoContatar: Boolean(r.nao_contatar),
+          createdAt: r.criado_em ? new Date(r.criado_em).toISOString() : new Date().toISOString(),
+          isEnriched: Boolean(r.decisor_nome || r.site || r.ticket || r.diagnostic),
+        } as PipelineLead;
+      });
+    });
   },
 
   async saveLead(lead: PipelineLead, organizationId = "default-org"): Promise<boolean> {
-    const sql = getSql();
-    if (!sql) return false;
-
-    try {
+    return withSql("saveLead", false, async (sql) => {
       const diagJson = lead.diagnostic ? JSON.stringify(lead.diagnostic) : null;
       const draftJson = lead.draft ? JSON.stringify(lead.draft) : null;
 
@@ -129,10 +123,7 @@ export const PipelineLeadService = {
           atualizado_em = NOW();
       `;
       return true;
-    } catch (err) {
-      console.error("PipelineLeadService.saveLead error:", err);
-      return false;
-    }
+    });
   },
 
   async importLeads(leads: PipelineLead[], organizationId = "default-org"): Promise<number> {
@@ -145,19 +136,13 @@ export const PipelineLeadService = {
   },
 
   async deleteLead(id: string, organizationId = "default-org"): Promise<boolean> {
-    const sql = getSql();
-    if (!sql) return false;
-
-    try {
+    return withSql("deleteLead", false, async (sql) => {
       await sql`
         DELETE FROM pipeline_leads
         WHERE id = ${id} AND organization_id = ${organizationId}
       `;
       return true;
-    } catch (err) {
-      console.error("PipelineLeadService.deleteLead error:", err);
-      return false;
-    }
+    });
   },
 
   async updateStage(
@@ -165,51 +150,39 @@ export const PipelineLeadService = {
     stage: PipelineStage,
     organizationId = "default-org",
   ): Promise<boolean> {
-    const sql = getSql();
-    if (!sql) return false;
-
-    try {
+    return withSql("updateStage", false, async (sql) => {
       await sql`
         UPDATE pipeline_leads
         SET etapa = ${stage}, atualizado_em = NOW()
         WHERE id = ${id} AND organization_id = ${organizationId}
       `;
       return true;
-    } catch (err) {
-      console.error("PipelineLeadService.updateStage error:", err);
-      return false;
-    }
+    });
   },
 
   async recordShareOpen(token: string, domain?: string | null): Promise<void> {
-    const sql = getSql();
-    if (!sql) return;
-
-    try {
+    await withSql("recordShareOpen", undefined, async (sql) => {
       const nowStr = new Date().toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" });
       const noteAppend = `\n[${nowStr}] 👁️ Diagnóstico visualizado pelo lead`;
-      
+
       if (domain) {
         await sql`
           UPDATE pipeline_leads
-          SET 
+          SET
             notas = COALESCE(notas, '') || ${noteAppend},
             atualizado_em = NOW()
-          WHERE site ILIKE ${'%' + domain + '%'}
-             OR (diagnostic->>'shareUrl') ILIKE ${'%' + token + '%'}
+          WHERE site ILIKE ${"%" + domain + "%"}
+             OR (diagnostic->>'shareUrl') ILIKE ${"%" + token + "%"}
         `;
       } else {
         await sql`
           UPDATE pipeline_leads
-          SET 
+          SET
             notas = COALESCE(notas, '') || ${noteAppend},
             atualizado_em = NOW()
-          WHERE (diagnostic->>'shareUrl') ILIKE ${'%' + token + '%'}
+          WHERE (diagnostic->>'shareUrl') ILIKE ${"%" + token + "%"}
         `;
       }
-    } catch (err) {
-      console.warn("PipelineLeadService.recordShareOpen warning:", err);
-    }
+    });
   },
 };
-
