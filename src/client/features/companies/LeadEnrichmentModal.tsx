@@ -27,7 +27,8 @@ import { Input } from "@/client/components/ui/input";
 import { Textarea } from "@/client/components/ui/textarea";
 import { Badge } from "@/client/components/ui/badge";
 import { toast } from "sonner";
-import { getCompanyByCnpj } from "@/serverFunctions/companies";
+import { enrichLeadAll, getCompanyByCnpj } from "@/serverFunctions/companies";
+import { calcIcpScore } from "./icpScore";
 import type { PipelineLead, LeadTemperature } from "./types";
 
 interface LeadEnrichmentModalProps {
@@ -77,6 +78,44 @@ export function LeadEnrichmentModal({
 
   const companyTitle = lead.nomeFantasia || lead.razaoSocial;
 
+  const [isEnrichingAll, setIsEnrichingAll] = useState(false);
+  const [extra, setExtra] = useState<Partial<PipelineLead>>({});
+
+  async function handleEnrichAll() {
+    setIsEnrichingAll(true);
+    try {
+      const current: PipelineLead = {
+        ...lead,
+        ...extra,
+        website: website.trim() || null,
+        instagram: instagram.trim() || null,
+        linkedin: linkedin.trim() || null,
+        decisorEmail: decisorEmail.trim() || null,
+        porte,
+        capitalSocial,
+        socios,
+      };
+      const { patch } = await enrichLeadAll({ data: { lead: current } });
+      if (patch.website) setWebsite(patch.website);
+      if (patch.instagram) setInstagram(patch.instagram);
+      if (patch.linkedin) setLinkedin(patch.linkedin);
+      if (patch.porte) setPorte(patch.porte);
+      if (patch.capitalSocial) setCapitalSocial(patch.capitalSocial);
+      if (patch.socios?.length) setSocios(patch.socios);
+      setExtra({
+        enrichment: patch.enrichment,
+        diagnostic: patch.diagnostic,
+        municipio: patch.municipio ?? lead.municipio,
+        uf: patch.uf || lead.uf,
+      });
+      toast.success("Enriquecimento concluído. Confira e clique em Salvar.");
+    } catch {
+      toast.error("Não foi possível concluir o enriquecimento.");
+    } finally {
+      setIsEnrichingAll(false);
+    }
+  }
+
   async function handleAutoEnrich() {
     setIsAutoEnriching(true);
     try {
@@ -95,13 +134,7 @@ export function LeadEnrichmentModal({
       if (data.email && !decisorEmail) setDecisorEmail(data.email);
 
       if (data.socios && data.socios.length > 0) {
-        setSocios(data.socios);
-        if (!decisorNome) {
-          setDecisorNome(data.socios[0].nome);
-          if (data.socios[0].qualificacaoDescricao) {
-            setDecisorCargo(data.socios[0].qualificacaoDescricao);
-          }
-        }
+        setSocios(data.socios); // o decisor é escolhido pelo Richard, nunca o 1º sócio
       }
 
       // Suggest website if email has a custom domain
@@ -123,6 +156,7 @@ export function LeadEnrichmentModal({
   function handleSave() {
     const updated: PipelineLead = {
       ...lead,
+      ...extra,
       decisorNome: decisorNome.trim() || null,
       decisorCargo: decisorCargo.trim() || null,
       whatsapp: whatsapp.trim() || null,
@@ -179,6 +213,25 @@ export function LeadEnrichmentModal({
 
           <div className="flex items-center gap-2">
             <Button
+              size="sm"
+              onClick={handleEnrichAll}
+              disabled={isEnrichingAll}
+              className="gap-1.5 text-xs font-semibold"
+              title="Receita, site, tecnologias, redes, domínio, e-mail, velocidade, diagnóstico, Google Maps e IA"
+            >
+              {isEnrichingAll ? (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  Enriquecendo… (até 2 min)
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-3.5 w-3.5" />
+                  Enriquecer tudo
+                </>
+              )}
+            </Button>
+            <Button
               variant="outline"
               size="sm"
               onClick={handleAutoEnrich}
@@ -203,6 +256,52 @@ export function LeadEnrichmentModal({
             </Button>
           </div>
         </div>
+
+        {(() => {
+          const enr = extra.enrichment ?? lead.enrichment;
+          if (!enr) return null;
+          const merged: PipelineLead = { ...lead, ...extra, website: website || null, porte, capitalSocial, socios, decisorNome: decisorNome || null, decisorEmail: decisorEmail || null };
+          const icp = calcIcpScore(merged);
+          const pessoa = decisorNome || socios[0]?.nome || "";
+          const linkedinSearch = pessoa
+            ? `https://www.google.com/search?q=${encodeURIComponent(`site:linkedin.com/in "${pessoa}" "${companyTitle}"`)}`
+            : null;
+          return (
+            <div className="rounded-lg border border-border bg-muted/30 p-3 space-y-2">
+              <div className="flex flex-wrap items-center gap-2 text-xs">
+                <Badge variant="outline" className="font-bold">ICP {icp.score}</Badge>
+                {enr.ai ? (
+                  <Badge variant="outline">
+                    {enr.ai.modelo} · aderência IA {enr.ai.aderenciaIcp}
+                  </Badge>
+                ) : null}
+                <span className="text-muted-foreground">
+                  Enriquecido em {new Date(enr.at).toLocaleString("pt-BR")}
+                </span>
+                {linkedinSearch ? (
+                  <a href={linkedinSearch} target="_blank" rel="noreferrer" className="text-primary underline">
+                    Procurar {pessoa.split(" ")[0]} no LinkedIn
+                  </a>
+                ) : null}
+              </div>
+              {enr.ai ? <p className="text-xs">{enr.ai.resumo}</p> : null}
+              <table className="w-full text-[11px]">
+                <tbody>
+                  {enr.items.map((it, i) => (
+                    <tr key={i} className="border-t border-border/50">
+                      <td className="py-1 pr-2 font-medium text-foreground/80 whitespace-nowrap">{it.campo}</td>
+                      <td className="py-1 pr-2 break-all">{it.valor}</td>
+                      <td className="py-1 text-muted-foreground whitespace-nowrap">{it.fonte}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {enr.mapsSkipped ? (
+                <p className="text-[11px] text-amber-600">Google Maps não consultado: {enr.mapsSkipped}.</p>
+              ) : null}
+            </div>
+          );
+        })()}
 
         {/* Navigation Tabs */}
         <div className="flex border-b border-border gap-6">

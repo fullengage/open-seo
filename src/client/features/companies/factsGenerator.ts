@@ -32,6 +32,8 @@ export function getShortSubjectFact(fact: LeadFact): string {
       return "posicionamento nas buscas";
     case "site_down":
       return "site fora do ar";
+    case "google_profile_no_site":
+      return "perfil do Google sem o site";
     case "parked_domain":
       return "endereço do site sem a empresa";
     default:
@@ -82,6 +84,7 @@ export function generateMeasuredOutreach(lead: PipelineLead): {
     "parked_domain",
     "not_in_top_10",
     "slow_lcp_mobile",
+    "google_profile_no_site",
     "no_meta_description",
     "generic_or_missing_h1",
     "outdated_year",
