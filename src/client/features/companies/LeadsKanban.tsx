@@ -348,7 +348,7 @@ export function LeadsKanban() {
                     const hasEnoughFacts = negativeFacts.length >= 2;
                     const hasApprovedDraft = lead.draft?.status === "approved";
                     const isRecuperacao = isRecuperacaoJudicialOuFalencia(lead.razaoSocial);
-                    const emailWarning = checkEmailWarning(lead.email, lead.website);
+                    const emailWarning = checkEmailWarning(lead.decisorEmail || lead.email, lead.website);
 
                     return (
                       <Card

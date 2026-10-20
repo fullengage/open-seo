@@ -66,7 +66,21 @@ export function generateMeasuredOutreach(lead: PipelineLead): {
 
   // 2. Coletar fatos medidos
   const allFacts = lead.diagnostic?.facts || [];
-  const negativeFacts = allFacts.filter((f) => f.category === "negative");
+  // Ordem de força: busca no Google > PageSpeed > meta description > H1 > ano antigo
+  const FACT_PRIORITY: LeadFact["type"][] = [
+    "not_in_top_10",
+    "slow_lcp_mobile",
+    "no_meta_description",
+    "generic_or_missing_h1",
+    "outdated_year",
+  ];
+  const rank = (t: LeadFact["type"]) => {
+    const i = FACT_PRIORITY.indexOf(t);
+    return i === -1 ? FACT_PRIORITY.length : i;
+  };
+  const negativeFacts = allFacts
+    .filter((f) => f.category === "negative")
+    .sort((a, b) => rank(a.type) - rank(b.type));
   const positiveFacts = allFacts.filter((f) => f.category === "positive");
 
   // Bloquear se houver menos de 2 fatos negativos

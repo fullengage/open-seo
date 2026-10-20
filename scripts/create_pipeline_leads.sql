@@ -18,9 +18,12 @@ CREATE TABLE IF NOT EXISTS pipeline_leads (
   diagnostic JSONB,
   draft JSONB,
   nao_contatar BOOLEAN DEFAULT FALSE,
+  dados JSONB,
   criado_em TIMESTAMPTZ DEFAULT NOW(),
   atualizado_em TIMESTAMPTZ DEFAULT NOW()
 );
 
 CREATE INDEX IF NOT EXISTS idx_pipeline_leads_org ON pipeline_leads (organization_id);
 CREATE INDEX IF NOT EXISTS idx_pipeline_leads_cnpj ON pipeline_leads (cnpj);
+
+ALTER TABLE pipeline_leads ADD COLUMN IF NOT EXISTS dados JSONB;

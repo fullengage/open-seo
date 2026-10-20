@@ -29,11 +29,13 @@ export const PipelineLeadService = {
       `;
 
       return rows.map((r: any) => ({
+        // Lead completo (porte, capital, UF, cidade, CNAE, sócios...); as colunas valem por cima
+        ...(r.dados ? (typeof r.dados === "string" ? JSON.parse(r.dados) : r.dados) : {}),
         id: r.id,
         cnpj: r.cnpj,
-        razaoSocial: r.empresa,
-        nomeFantasia: r.empresa,
-        uf: "SP",
+        razaoSocial: r.dados?.razaoSocial || r.empresa,
+        nomeFantasia: r.dados?.nomeFantasia ?? r.empresa,
+        uf: r.dados?.uf || "",
         stage: r.etapa as PipelineStage,
         decisorNome: r.decisor_nome || null,
         decisorCargo: r.decisor_cargo || null,
@@ -80,7 +82,7 @@ export const PipelineLeadService = {
         INSERT INTO pipeline_leads (
           id, organization_id, cnpj, empresa, etapa, decisor_nome, decisor_cargo,
           email, telefone, linkedin, site, temperatura, ticket, proxima_acao,
-          proximo_contato, notas, diagnostic, draft, nao_contatar, criado_em, atualizado_em
+          proximo_contato, notas, diagnostic, draft, nao_contatar, dados, criado_em, atualizado_em
         ) VALUES (
           ${lead.id},
           ${organizationId},
@@ -101,6 +103,7 @@ export const PipelineLeadService = {
           ${diagJson}::jsonb,
           ${draftJson}::jsonb,
           ${Boolean(lead.naoContatar)},
+          ${JSON.stringify(lead)}::jsonb,
           ${lead.createdAt || new Date().toISOString()},
           NOW()
         )
@@ -122,6 +125,7 @@ export const PipelineLeadService = {
           diagnostic = EXCLUDED.diagnostic,
           draft = EXCLUDED.draft,
           nao_contatar = EXCLUDED.nao_contatar,
+          dados = EXCLUDED.dados,
           atualizado_em = NOW();
       `;
       return true;

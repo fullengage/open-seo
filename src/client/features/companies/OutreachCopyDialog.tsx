@@ -385,19 +385,6 @@ export function OutreachCopyDialog({
                 )}
               </Button>
 
-              {/* Botões para carregar fatos de referência (ex: Lagune) */}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  handleAddMeasuredFact("slow_lcp_mobile", "6,2 s");
-                  handleAddMeasuredFact("outdated_year", "2019/2020");
-                  handleAddMeasuredFact("high_google_rating", "4,7");
-                }}
-                className="text-xs h-8 border-primary/30 text-primary hover:bg-primary/10"
-              >
-                + Adicionar Fatos Medidos (LCP 6,2 s, Anos 2019/2020, Nota 4,7)
-              </Button>
             </div>
           </div>
         )}
