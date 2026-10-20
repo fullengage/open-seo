@@ -174,6 +174,53 @@ async function googleMaps(query: string): Promise<{ place: MapsPlace | null; ski
   }
 }
 
+
+/** Campos úteis da página da empresa no LinkedIn (os nomes variam entre versões do coletor). */
+export function parseLinkedinCompany(r: Record<string, unknown> | null | undefined) {
+  if (!r) return null;
+  const pick = (...keys: string[]) => {
+    for (const k of keys) {
+      const v = r[k];
+      if (v !== null && v !== undefined && String(v).trim() !== "") return Array.isArray(v) ? v.join(", ") : String(v);
+    }
+    return null;
+  };
+  return {
+    nome: pick("name", "company_name"),
+    seguidores: pick("followers", "followers_count"),
+    funcionariosNoLinkedin: pick("employees_in_linkedin", "employees_count"),
+    porte: pick("company_size", "size"),
+    setor: pick("industries", "industry"),
+    sede: pick("headquarters", "hq", "location"),
+    fundada: pick("founded", "year_founded"),
+  };
+}
+
+/** Página da empresa no LinkedIn via Bright Data (só empresa; nada de perfis de pessoas). */
+async function linkedinCompany(url: string): Promise<{ data: ReturnType<typeof parseLinkedinCompany>; skipped?: string }> {
+  const key = process.env.BRIGHTDATA_API_KEY;
+  if (!key) return { data: null, skipped: "Bright Data sem chave" };
+  try {
+    // ponytail: sem contador de uso próprio; o plano grátis cobre 5.000 registros/mês — contar quando passar disso
+    const r = await fetch(
+      "https://api.brightdata.com/datasets/v3/scrape?dataset_id=gd_l1vikfnt1wgvvqz95w&format=json",
+      {
+        method: "POST",
+        headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+        body: JSON.stringify([{ url }]),
+        signal: AbortSignal.timeout(70_000),
+      },
+    );
+    if (r.status === 202) return { data: null, skipped: "LinkedIn demorou mais de 1 minuto; tente de novo" };
+    if (!r.ok) return { data: null, skipped: `Bright Data respondeu ${r.status}` };
+    const j = (await r.json()) as unknown;
+    const first = (Array.isArray(j) ? j[0] : j) as Record<string, unknown> | undefined;
+    return { data: parseLinkedinCompany(first) };
+  } catch {
+    return { data: null, skipped: "Bright Data não respondeu" };
+  }
+}
+
 const norm = (s: string) =>
   s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9 ]/g, " ");
 /** Evita usar o perfil de outra empresa: o 1º nome forte precisa aparecer no título do Maps. */
@@ -272,6 +319,21 @@ export const LeadEnrichmentService = {
       add("Facebook", d.facebook, "Links do site");
     }
 
+    // 3b. Página da empresa no LinkedIn (Bright Data)
+    let linkedinSkipped: string | null = null;
+    const liUrl = patch.linkedin || lead.linkedin;
+    if (liUrl) {
+      const li = await linkedinCompany(liUrl);
+      linkedinSkipped = li.skipped || null;
+      if (li.data) {
+        add("LinkedIn: funcionários", li.data.funcionariosNoLinkedin || li.data.porte, "LinkedIn (Bright Data)");
+        add("LinkedIn: setor", li.data.setor, "LinkedIn (Bright Data)");
+        add("LinkedIn: seguidores", li.data.seguidores, "LinkedIn (Bright Data)");
+        add("LinkedIn: sede", li.data.sede, "LinkedIn (Bright Data)");
+        add("LinkedIn: fundada em", li.data.fundada, "LinkedIn (Bright Data)");
+      }
+    }
+
     // 4. Domínio (Registro.br) e e-mail (DNS)
     if (domain) {
       const r = await rdap(domain);
@@ -341,6 +403,7 @@ export const LeadEnrichmentService = {
       add("Busca sugerida", ai.buscaSugerida, "Claude Haiku 5.5");
     }
 
+    if (linkedinSkipped) add("LinkedIn", `não consultado: ${linkedinSkipped}`, "Bright Data");
     const enrichment: LeadEnrichment = { at: today(), items, ai, mapsSkipped: mapsSkipped || null };
     return {
       patch: {

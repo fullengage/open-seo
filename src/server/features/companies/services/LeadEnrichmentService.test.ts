@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { detectFromHtml, samePlace } from "./LeadEnrichmentService";
+import { detectFromHtml, parseLinkedinCompany, samePlace } from "./LeadEnrichmentService";
 
 describe("detectFromHtml", () => {
   it("acha plataforma, rastreamento, WhatsApp e redes", () => {
@@ -23,5 +23,13 @@ describe("samePlace", () => {
     expect(samePlace("LAGUNE COSMETICS", "Lagune Cosmetics Indústria, Comércio")).toBe(true);
     expect(samePlace("WB BEAUTY TERCEIRIZACAO DE COSMETICOS", "WB Beauty Terceirização")).toBe(true);
     expect(samePlace("Clínica Auxilium Vita", "Clínica Viavita")).toBe(false);
+  });
+});
+
+describe("parseLinkedinCompany", () => {
+  it("lê os campos com nomes alternativos e ignora vazios", () => {
+    const d = parseLinkedinCompany({ name: "Lagune", followers: 1043, company_size: "11-50", industries: ["Cosméticos"], headquarters: "" });
+    expect(d).toEqual({ nome: "Lagune", seguidores: "1043", funcionariosNoLinkedin: null, porte: "11-50", setor: "Cosméticos", sede: null, fundada: null });
+    expect(parseLinkedinCompany(null)).toBeNull();
   });
 });
