@@ -219,10 +219,9 @@ export function SearchPerformancePage({
       <div className="mx-auto max-w-7xl space-y-4">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <h1 className="text-2xl font-semibold">Search Performance</h1>
+            <h1 className="text-2xl font-semibold">Desempenho no Google GSC</h1>
             <p className="text-sm text-muted-foreground">
-              See your site&apos;s clicks, impressions, CTR, and position from
-              Google Search Console.
+              Acompanhe cliques, impressões, CTR e posição média do seu site no Google Search Console.
             </p>
           </div>
           {report?.connected ? (
@@ -231,7 +230,7 @@ export function SearchPerformancePage({
               params={{ projectId }}
               className="shrink-0 self-start text-sm font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline sm:mt-1"
             >
-              Change property
+              Alterar propriedade
             </Link>
           ) : null}
         </div>
@@ -276,11 +275,11 @@ export function SearchPerformancePage({
               >
                 <TabsTrigger value="striking">
                   {reportQuery.isPlaceholderData
-                    ? "Striking distance"
-                    : `Striking distance (${report.strikingDistance?.length ?? 0})`}
+                    ? "Oportunidades imediatas"
+                    : `Oportunidades imediatas (${report.strikingDistance?.length ?? 0})`}
                 </TabsTrigger>
-                <TabsTrigger value="queries">Queries</TabsTrigger>
-                <TabsTrigger value="pages">Pages</TabsTrigger>
+                <TabsTrigger value="queries">Termos de busca</TabsTrigger>
+                <TabsTrigger value="pages">Páginas</TabsTrigger>
               </DataTableTabs>
               <div className="flex flex-wrap items-center gap-2 border-b border-border px-4 py-2">
                 <Button
@@ -290,10 +289,10 @@ export function SearchPerformancePage({
                   aria-expanded={showFilters}
                   aria-controls="search-performance-filters"
                   onClick={() => setShowFilters((current) => !current)}
-                  title="Toggle table filters"
+                  title="Alternar filtros da tabela"
                 >
                   <SlidersHorizontal data-icon="inline-start" />
-                  Filters
+                  Filtros
                   {activeFilterCount > 0 ? (
                     <Badge size="sm">{activeFilterCount}</Badge>
                   ) : null}
@@ -311,7 +310,7 @@ export function SearchPerformancePage({
               {showFilters ? filtersPanel : null}
               {reportQuery.isPlaceholderData ? (
                 <div className="p-8 text-sm" role="status">
-                  Loading matching results…
+                  Carregando resultados correspondentes…
                 </div>
               ) : tab === "striking" ? (
                 <StrikingDistanceTable

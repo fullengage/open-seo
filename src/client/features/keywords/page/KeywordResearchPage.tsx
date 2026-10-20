@@ -199,15 +199,15 @@ export function KeywordResearchPage(input: Props) {
     <div className="px-4 py-4 md:px-6 md:py-6 pb-24 md:pb-8 overflow-auto">
       <div className="mx-auto flex max-w-7xl flex-col gap-4">
         <PageHeader
-          title="Keyword Research"
-          description="Discover keyword ideas, search demand, and ranking opportunities."
+          title="Pesquisa de Palavras-chave"
+          description="Descubra ideias de palavras-chave, volume de buscas e oportunidades de rankeamento."
           backLink={
             controller.hasSearched ? (
               <BackButton
                 data-testid="keyword-research-recent-searches"
                 onClick={showRecentSearches}
               >
-                Recent searches
+                Buscas recentes
               </BackButton>
             ) : undefined
           }
@@ -309,7 +309,7 @@ function KeywordSaveDialog({
 
   return (
     <FormDialog
-      title={`Save ${controller.selectedKeywordRows.length} Keywords`}
+      title={`Salvar ${controller.selectedKeywordRows.length} Palavras-chave`}
       onClose={() => controller.setShowSaveDialog(false)}
       actions={
         <>
@@ -317,23 +317,23 @@ function KeywordSaveDialog({
             variant="outline"
             onClick={() => controller.setShowSaveDialog(false)}
           >
-            Cancel
+            Cancelar
           </Button>
           <Button
             pending={controller.savePending}
             onClick={controller.confirmSave}
           >
-            Save
+            Salvar
           </Button>
         </>
       }
     >
       <div className="space-y-2 text-sm text-muted-foreground">
-        <p>These keywords will be saved to your current project.</p>
+        <p>Estas palavras-chave serão salvas no seu projeto atual.</p>
         {controller.locationName ? (
           <p>
-            Saved keywords show national metrics. The local volume for{" "}
-            {formatLocationLabel(controller.locationName)} is not saved.
+            Palavras salvas exibem métricas nacionais. O volume regional para{" "}
+            {formatLocationLabel(controller.locationName)} não é retido separadamente.
           </p>
         ) : null}
       </div>

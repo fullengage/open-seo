@@ -13,12 +13,12 @@ function RankTrackingLayout() {
     <div className="px-4 py-4 pb-24 overflow-auto md:px-6 md:py-6 md:pb-8">
       <div className="mx-auto max-w-7xl space-y-4">
         <PageHeader
-          title="Rank Tracking"
-          description="Track keyword positions across domains"
+          title="Monitor de Posições"
+          description="Monitore o posicionamento de palavras-chave nos mecanismos de busca"
           backLink={
             projectId && configId ? (
               <BackLink to="/p/$projectId/rank-tracking" params={{ projectId }}>
-                Tracked domains
+                Domínios monitorados
               </BackLink>
             ) : undefined
           }

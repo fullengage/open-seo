@@ -111,14 +111,14 @@ export function CreateProjectModal({ onClose }: { onClose: () => void }) {
         <form.AppForm>
           <form.Form className="flex flex-col gap-4">
             <DialogHeader>
-              <DialogTitle>New project</DialogTitle>
+              <DialogTitle>Novo projeto</DialogTitle>
             </DialogHeader>
 
             <form.AppField name="name">
               {(field) => (
                 <field.TextField
-                  label="Name"
-                  placeholder="Acme Inc."
+                  label="Nome da Empresa / Projeto"
+                  placeholder="Ex: Fullweb, Lagune..."
                   maxLength={120}
                   required
                 />
@@ -126,22 +126,21 @@ export function CreateProjectModal({ onClose }: { onClose: () => void }) {
             </form.AppField>
 
             <p className="text-sm text-muted-foreground">
-              Adding your website starts a 50-page scan with JavaScript
-              rendering. Rendering uses your credits.
+              Adicionar o site do cliente iniciará uma auditoria técnica completa de SEO e velocidade sem custos de API.
             </p>
             <form.AppField name="domain">
               {(field) => (
                 <field.TextField
                   label={
                     <>
-                      Domain{" "}
+                      Domínio (Site){" "}
                       <span className="font-normal text-muted-foreground">
-                        (optional)
+                        (opcional)
                       </span>
                     </>
                   }
-                  description="You can connect Search Console and set up rank tracking after creating the project."
-                  placeholder="example.com"
+                  description="Você poderá conectar o Google Search Console e monitorar posições após criar o projeto."
+                  placeholder="exemplo.com.br"
                   maxLength={255}
                 />
               )}
@@ -157,9 +156,7 @@ export function CreateProjectModal({ onClose }: { onClose: () => void }) {
                 )}
               </form.Field>
               <FieldDescription>
-                Keyword, SERP, and domain data uses this country and language
-                unless a call asks for a different one. Change it later in
-                project settings.
+                Os dados de busca e palavras-chave utilizam o Brasil (pt-BR) como padrão nativo.
               </FieldDescription>
             </div>
 
@@ -170,13 +167,14 @@ export function CreateProjectModal({ onClose }: { onClose: () => void }) {
                 onClick={onClose}
                 disabled={createMutation.isPending}
               >
-                Cancel
+                Cancelar
               </Button>
-              <form.SubmitButton>Create project</form.SubmitButton>
+              <form.SubmitButton>Criar Projeto</form.SubmitButton>
             </DialogFooter>
           </form.Form>
         </form.AppForm>
       </DialogContent>
+
     </Dialog>
   );
 }

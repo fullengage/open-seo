@@ -142,7 +142,7 @@ function BillingPage() {
 
   return (
     <div className="mx-auto box-content max-w-7xl space-y-5 px-4 py-4 pb-24 md:px-6 md:py-6 md:pb-8">
-      <PageHeader title="Billing" />
+      <PageHeader title="Faturamento & Planos" />
 
       {accountQuery.isPending ? (
         <div className="grid gap-5 md:grid-cols-2">
@@ -151,7 +151,7 @@ function BillingPage() {
       ) : !account ? (
         <QueryError
           cause={accountQuery.error}
-          fallback="We couldn't load your billing details right now. Please try again."
+          fallback="Não foi possível carregar os dados de faturamento agora. Tente novamente."
           onRetry={() => void accountQuery.refetch()}
           isRetrying={accountQuery.isFetching}
         />
@@ -160,7 +160,7 @@ function BillingPage() {
           {accountQuery.isError ? (
             <QueryError
               cause={accountQuery.error}
-              fallback="Failed to refresh billing details"
+              fallback="Falha ao atualizar dados de faturamento"
               onRetry={() => void accountQuery.refetch()}
               isRetrying={accountQuery.isFetching}
             />
@@ -174,60 +174,59 @@ function BillingPage() {
                   <div className="text-2xl font-semibold tabular-nums">
                     ${totalRemaining.toFixed(2)}{" "}
                     <span className="text-sm font-normal text-muted-foreground">
-                      remaining
+                      restantes
                     </span>
                   </div>
                   {!isFreePlan ? (
                     <div className="mt-1 flex gap-3 text-xs text-muted-foreground">
                       <span className="tabular-nums">
-                        Monthly ${monthlyRemaining.toFixed(2)}
+                        Mensal ${monthlyRemaining.toFixed(2)}
                       </span>
                       <span>&middot;</span>
                       <span className="tabular-nums">
-                        Top-ups ${topUpRemaining.toFixed(2)}
+                        Recargas ${topUpRemaining.toFixed(2)}
                       </span>
                     </div>
                   ) : null}
                   {isOutOfCredits ? (
                     <p className="mt-2 text-xs text-destructive">
                       {isFreePlan
-                        ? "You’ve used your free credits. Upgrade your plan to continue."
-                        : `You’ve used this month’s credits. Buy more below to keep going${
+                        ? "Você utilizou seus créditos gratuitos. Faça upgrade para continuar."
+                        : `Você utilizou os créditos deste mês. Adquira mais abaixo para continuar${
                             refillDate
-                              ? `, or wait for them to refill on ${refillDate}`
+                              ? `, ou aguarde a renovação em ${refillDate}`
                               : ""
                           }.`}
                     </p>
                   ) : isLowCredits ? (
                     <p className="mt-2 text-xs text-amber-600">
-                      You&rsquo;re running low on credits.{" "}
+                      Seus créditos estão acabando.{" "}
                       {isFreePlan
-                        ? `Upgrade to get $${BASE_PLAN_OFFER.monthlyCreditsUsd}/month.`
-                        : "Buy more credits below."}
+                        ? `Faça upgrade para ter $${BASE_PLAN_OFFER.monthlyCreditsUsd}/mês.`
+                        : "Adquira mais créditos abaixo."}
                     </p>
                   ) : null}
                 </div>
 
                 <div className="text-sm">
-                  <span className="font-medium">Plan</span>{" "}
+                  <span className="font-medium">Plano</span>{" "}
                   <span className="text-muted-foreground">
                     {account.paidPlanId
                       ? getPlanName(account.paidPlanId)
-                      : "Free Plan"}
+                      : "Plano Gratuito"}
                   </span>
                   {account.paidPlanId ? (
                     <span className="text-muted-foreground">
                       {" "}
-                      &middot; ${account.monthlyCreditsUsd.toFixed(2)} of Usage
-                      Credits each month
+                      &middot; ${account.monthlyCreditsUsd.toFixed(2)} de créditos
+                      mensais
                     </span>
                   ) : null}
                 </div>
 
                 {!canManageBilling ? (
                   <p className="border-t border-border pt-3 text-sm text-muted-foreground">
-                    Only the organization owner can change the plan or buy
-                    credits. Ask them if you need more.
+                    Apenas o proprietário da organização pode alterar o plano ou comprar créditos.
                   </p>
                 ) : isFreePlan ? (
                   <div className="space-y-3 border-t border-border pt-3">
@@ -269,8 +268,8 @@ function BillingPage() {
                       }
                     >
                       {pendingAction === "plan"
-                        ? "Redirecting to Stripe..."
-                        : "Upgrade Plan"}
+                        ? "Redirecionando para o Stripe..."
+                        : "Fazer Upgrade"}
                     </Button>
                     {actionError("plan")}
                   </div>
@@ -285,13 +284,13 @@ function BillingPage() {
                         void runAction(
                           "plan",
                           openPortal,
-                          "We couldn't open the billing portal. Please try again.",
+                          "Não foi possível abrir o portal de faturamento. Tente novamente.",
                         )
                       }
                     >
                       {pendingAction === "plan"
-                        ? "Opening Stripe..."
-                        : "Manage subscription"}
+                        ? "Abrindo Stripe..."
+                        : "Gerenciar assinatura"}
                     </Button>
                     {actionError("plan")}
                   </div>
@@ -303,10 +302,9 @@ function BillingPage() {
             {!isFreePlan && canManageBilling ? (
               <Card>
                 <CardHeader>
-                  <CardTitle>Buy credits</CardTitle>
+                  <CardTitle>Comprar créditos</CardTitle>
                   <CardDescription>
-                    Top-up credits never expire and are used after your monthly
-                    credits.
+                    Créditos avulsos nunca expiram e são consumidos após os créditos mensais.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-3">
@@ -319,14 +317,14 @@ function BillingPage() {
                         max={99}
                         step={1}
                         inputMode="numeric"
-                        aria-label="Top-up amount in USD"
+                        aria-label="Valor da recarga em USD"
                         aria-invalid={showTopUpError}
                         value={topUpAmount}
                         onChange={(e) => setTopUpAmount(e.target.value)}
                       />
                     </InputGroup>
                     {showTopUpError ? (
-                      <FieldError>Enter between $10–$99.</FieldError>
+                      <FieldError>Digite entre $10 e $99.</FieldError>
                     ) : null}
                   </Field>
 
@@ -339,13 +337,13 @@ function BillingPage() {
                       void runAction(
                         "topUp",
                         startTopUpCheckout,
-                        "We couldn't start the checkout. Please try again.",
+                        "Não foi possível iniciar o pagamento. Tente novamente.",
                       )
                     }
                   >
                     {pendingAction === "topUp"
-                      ? "Redirecting to Stripe..."
-                      : "Buy credits"}
+                      ? "Redirecionando para o Stripe..."
+                      : "Comprar créditos"}
                   </Button>
                   {actionError("topUp")}
                 </CardContent>
@@ -371,7 +369,7 @@ function BillingPage() {
       />
 
       <p className="text-xs text-muted-foreground">
-        Billing is powered by Stripe.
+        Processamento de faturamento seguro via Stripe.
       </p>
     </div>
   );

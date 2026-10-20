@@ -83,8 +83,8 @@ function AiPage() {
     <div className="h-full overflow-auto px-4 py-4 pb-24 md:px-6 md:py-6 md:pb-8">
       <div className="mx-auto max-w-7xl">
         <PageHeader
-          title="Agent setup"
-          description="The most powerful way to use OpenSEO is through the AI agent you already use. Set it up once, then ask it anything."
+          title="Configuração de Agentes IA"
+          description="Integre o OpenSEO diretamente com agentes de IA (Claude, ChatGPT, Cursor, Windsurf) para automatizar diagnósticos e análises."
         />
 
         <Tabs
@@ -98,20 +98,18 @@ function AiPage() {
           className="mt-8"
         >
           <TabsList variant="line">
-            <TabsTrigger value="setup">Set up your agent</TabsTrigger>
-            <TabsTrigger value="skills">Skills</TabsTrigger>
+            <TabsTrigger value="setup">Conectar Agente</TabsTrigger>
+            <TabsTrigger value="skills">Habilidades (Skills)</TabsTrigger>
           </TabsList>
           <TabsContent value="setup">
             <div className="mt-6 space-y-5">
               <Card size="lg">
                 <CardHeader>
                   <CardTitle>
-                    <h2>Set up your agent</h2>
+                    <h2>Conectar ao seu agente de IA</h2>
                   </CardTitle>
                   <CardDescription>
-                    Paste the setup prompt into your agent to connect OpenSEO
-                    and install its SEO skills. It will guide you through any
-                    manual steps.
+                    Cole o prompt de configuração no seu agente para conectar ao OpenSEO via MCP e habilitar as ferramentas de SEO.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -121,8 +119,8 @@ function AiPage() {
                       variant="default"
                       size="lg"
                       value={prompt}
-                      label="Copy setup prompt"
-                      successMessage="Setup prompt copied"
+                      label="Copiar prompt de configuração"
+                      successMessage="Prompt copiado com sucesso!"
                       onCopy={() => captureClientEvent("mcp:setup_prompt_copy")}
                     />
                     <a
@@ -131,7 +129,7 @@ function AiPage() {
                       rel="noreferrer"
                       className={MUTED_LINK_CLASS}
                     >
-                      Setup instructions
+                      Instruções de configuração
                       <ArrowUpRight className="size-3.5" />
                     </a>
                   </div>

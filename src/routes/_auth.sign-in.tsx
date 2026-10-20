@@ -102,7 +102,7 @@ function SignInPage() {
 
   return (
     <AuthPageCard
-      title="Sign in"
+      title="Entrar no OpenSEO"
       footer={
         isHostedMode ? (
           <div
@@ -118,7 +118,7 @@ function SignInPage() {
                 search={getSignInSearch(redirectTo)}
                 className="text-foreground underline underline-offset-2 hover:text-foreground/80 transition-colors"
               >
-                Forgot password?
+                Esqueceu a senha?
               </Link>
             ) : null}
             <Link
@@ -126,7 +126,7 @@ function SignInPage() {
               search={getSignInSearch(redirectTo)}
               className="text-foreground underline underline-offset-2 hover:text-foreground/80 transition-colors"
             >
-              Create account
+              Criar conta
             </Link>
           </div>
         ) : null
@@ -137,7 +137,9 @@ function SignInPage() {
       ) : !showEmailForm ? (
         <>
           <AuthMethodChooser
-            googleLabel="Continue with Google"
+            googleLabel="Continuar com Google"
+            emailLabel="Continuar com e-mail"
+
             disabled={!isHostedMode}
             isBusy={google.isStarting}
             onContinueWithGoogle={() => {

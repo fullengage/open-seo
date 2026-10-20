@@ -72,7 +72,7 @@ export function GscCard({
 
   return (
     <CardShell
-      title="Google Search Console Performance"
+      title="Desempenho no Google Search Console"
       icon={<GoogleSearchConsoleLogo className="size-5" />}
       action={
         <Link
@@ -80,16 +80,16 @@ export function GscCard({
           params={{ projectId }}
           className={moreDetailsClass}
         >
-          View GSC insights →
+          Ver dados detalhados do GSC →
         </Link>
       }
     >
       <p className="mb-4 text-sm font-medium text-muted-foreground">
-        Last 28 days
+        Últimos 28 dias
       </p>
       {reportQuery.isError ? (
         <p className="text-sm text-muted-foreground">
-          Couldn&rsquo;t load Search Console data. Try again shortly.
+          Não foi possível carregar os dados do Search Console no momento.
         </p>
       ) : !report ? (
         <MetricsTableSkeleton />
@@ -97,15 +97,15 @@ export function GscCard({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Metric</TableHead>
-              <TableHead className="text-right">Value</TableHead>
-              <TableHead className="text-right">Change</TableHead>
+              <TableHead>Métrica</TableHead>
+              <TableHead className="text-right">Valor</TableHead>
+              <TableHead className="text-right">Variação</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {[
               {
-                label: "Clicks",
+                label: "Cliques",
                 value: formatCount(report.totals.clicks),
                 change: percentChange(
                   report.totals.clicks,
@@ -113,7 +113,7 @@ export function GscCard({
                 ),
               },
               {
-                label: "Impressions",
+                label: "Impressões",
                 value: formatCount(report.totals.impressions),
                 change: percentChange(
                   report.totals.impressions,
@@ -121,12 +121,12 @@ export function GscCard({
                 ),
               },
               {
-                label: "Click-through rate",
+                label: "Taxa de Cliques (CTR)",
                 value: formatCtr(report.totals.ctr),
                 change: null,
               },
               {
-                label: "Average position",
+                label: "Posição Média",
                 value: formatPosition(report.totals.position),
                 change: null,
               },
@@ -150,6 +150,7 @@ export function GscCard({
       )}
     </CardShell>
   );
+
 }
 
 export function AuditHealthCard({
@@ -180,17 +181,16 @@ export function AuditHealthCard({
   });
   if (!audit)
     return (
-      <CardShell title="Site health">
+      <CardShell title="Saúde Técnica do Site">
         <div className="flex flex-1 flex-col items-center justify-center gap-3 py-6 text-center">
           <ScanSearch className="size-7 text-muted-foreground" />
-          <h3 className="font-medium">Find what's holding your website back</h3>
+          <h3 className="font-medium">Descubra o que está travando o crescimento do site</h3>
           <p className="max-w-sm text-sm text-muted-foreground">
-            Scan up to 50 pages for broken links, missing titles and pages
-            Google can't index.
+            Rastreie até 50 páginas em busca de links quebrados, títulos ausentes e páginas que o Google não indexa.
           </p>
           {domain ? (
             <Button disabled={scan.isPending} onClick={() => scan.mutate()}>
-              {scan.isPending ? "Starting scan…" : "Scan my website"}
+              {scan.isPending ? "Iniciando auditoria…" : "Auditar meu site"}
             </Button>
           ) : (
             <Button
@@ -199,13 +199,13 @@ export function AuditHealthCard({
                 <Link to="/p/$projectId/settings" params={{ projectId }} />
               }
             >
-              Add your website
+              Adicionar site
             </Button>
           )}
           {scan.isError && (
             <QueryError
               error={scan.error}
-              fallback="Could not start your scan"
+              fallback="Não foi possível iniciar a auditoria"
             />
           )}
         </div>
@@ -223,7 +223,7 @@ export function AuditHealthCard({
     // not the same as a healthy site, so show progress instead.
     return (
       <CardShell
-        title="Site health"
+        title="Saúde Técnica do Site"
         action={
           <Link
             to="/p/$projectId/audit"
@@ -231,7 +231,7 @@ export function AuditHealthCard({
             search={{ auditId: audit.id }}
             className={moreDetailsClass}
           >
-            View progress
+            Ver progresso
           </Link>
         }
       >
@@ -239,27 +239,27 @@ export function AuditHealthCard({
           <LoaderCircle className="size-7 animate-spin text-muted-foreground" />
           <h3 className="font-medium">
             {isLighthouse
-              ? "Running Lighthouse checks"
+              ? "Executando testes do Google Lighthouse"
               : isFinalizing
-                ? "Preparing your results"
+                ? "Preparando diagnóstico"
                 : audit.currentPhase === "discovery"
-                  ? "Finding pages to scan"
-                  : "Scanning your website"}
+                  ? "Mapeando páginas para auditar"
+                  : "Rastreando o site"}
           </h3>
           {!isFinalizing && (
             <Progress
               className="w-full max-w-xs"
               value={checked}
               max={total || 1}
-              aria-label={isLighthouse ? "Lighthouse checks" : "Pages crawled"}
+              aria-label={isLighthouse ? "Testes do Lighthouse" : "Páginas rastreadas"}
             />
           )}
           <p className="text-sm text-muted-foreground tabular-nums">
             {isLighthouse
-              ? `${checked} of ${total} checks${audit.lighthouseFailed > 0 ? ` (${audit.lighthouseFailed} failed)` : ""}`
+              ? `${checked} de ${total} testes${audit.lighthouseFailed > 0 ? ` (${audit.lighthouseFailed} falhas)` : ""}`
               : isFinalizing
-                ? `${audit.pagesCrawled} pages crawled. Finishing your report.`
-                : `${checked} of up to ${total} pages crawled`}
+                ? `${audit.pagesCrawled} páginas rastreadas. Finalizando relatório.`
+                : `${checked} de até ${total} páginas rastreadas`}
           </p>
         </div>
       </CardShell>
@@ -268,7 +268,7 @@ export function AuditHealthCard({
 
   return (
     <CardShell
-      title="Site health"
+      title="Saúde Técnica do Site"
       action={
         <Link
           to="/p/$projectId/audit"
@@ -276,38 +276,38 @@ export function AuditHealthCard({
           search={{ auditId: audit.id, tab: "issues" }}
           className={moreDetailsClass}
         >
-          Review issues
+          Ver problemas detectados
         </Link>
       }
     >
       {audit.status === "failed" && (
         <p className="mb-4 text-sm text-destructive">
-          The latest scan didn’t finish. Review the results or try again.
+          A última auditoria não concluiu. Revise os resultados ou tente novamente.
         </p>
       )}
       {audit.status === "completed" && (
         <p className="mb-4 text-sm text-muted-foreground">
-          {audit.pagesCrawled} pages checked · {formatDay(audit.startedAt)}
+          {audit.pagesCrawled} páginas auditadas · {formatDay(audit.startedAt)}
         </p>
       )}
       {audit.topIssues.length === 0 ? (
         audit.status === "completed" ? (
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Check className="size-4 text-success" />
-            No issues found — your site looks healthy.
+            Nenhum problema encontrado — seu site está saudável.
           </div>
         ) : (
           <p className="text-sm text-muted-foreground">
-            Run the audit again to see issues.
+            Execute a auditoria novamente para ver problemas.
           </p>
         )
       ) : (
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Issue</TableHead>
-              <TableHead>Severity</TableHead>
-              <TableHead className="text-right">Pages affected</TableHead>
+              <TableHead>Problema</TableHead>
+              <TableHead>Severidade</TableHead>
+              <TableHead className="text-right">Páginas afetadas</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -319,9 +319,9 @@ export function AuditHealthCard({
                 <TableCell>
                   <SeverityBadge severity={issue.severity}>
                     {issue.severity === "critical"
-                      ? "Critical"
+                      ? "Crítico"
                       : issue.severity === "warning"
-                        ? "Warning"
+                        ? "Aviso"
                         : "Info"}
                   </SeverityBadge>
                 </TableCell>
@@ -336,3 +336,4 @@ export function AuditHealthCard({
     </CardShell>
   );
 }
+

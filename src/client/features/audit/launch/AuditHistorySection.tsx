@@ -34,7 +34,7 @@ export function AuditHistorySection({
   return (
     <QueryState
       query={historyQuery}
-      errorFallback="Failed to load audit history"
+      errorFallback="Falha ao carregar histórico de auditorias"
     >
       {(history) => (
         <AuditHistoryTable
@@ -57,21 +57,21 @@ function AuditHistoryTable({
   onDelete: (auditId: string) => void;
 }) {
   if (history.length === 0) {
-    return <EmptyState icon={ScanSearch} title="No audits yet" />;
+    return <EmptyState icon={ScanSearch} title="Nenhuma auditoria realizada ainda" />;
   }
 
   return (
     <TableCard>
       <DataTableToolbar>
-        <h2 className="text-sm font-semibold">Previous Audits</h2>
+        <h2 className="text-sm font-semibold">Auditorias Anteriores</h2>
       </DataTableToolbar>
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Date</TableHead>
+            <TableHead>Data</TableHead>
             <TableHead>URL</TableHead>
             <TableHead>Status</TableHead>
-            <TableHead>Pages</TableHead>
+            <TableHead>Páginas</TableHead>
             <TableHead>Lighthouse</TableHead>
             <TableHead />
           </TableRow>
@@ -92,7 +92,7 @@ function AuditHistoryTable({
               <TableCell>
                 {audit.ranLighthouse ? (
                   <Badge variant="outline" size="sm">
-                    Yes
+                    Sim
                   </Badge>
                 ) : null}
               </TableCell>
@@ -133,15 +133,15 @@ function HistoryActions({
           />
         }
       >
-        View
+        Ver
       </Button>
-      <RowActionsMenu label="Audit actions">
+      <RowActionsMenu label="Ações da auditoria">
         <DropdownMenuItem
           variant="destructive"
           onClick={() => onDelete(auditId)}
         >
           <Trash2 />
-          Delete audit
+          Excluir auditoria
         </DropdownMenuItem>
       </RowActionsMenu>
     </div>

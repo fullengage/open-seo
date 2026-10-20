@@ -274,10 +274,11 @@ function ConnectionStatusPill({
     >
       <span className="size-1.5 rounded-full bg-current" />
       {connected
-        ? "Connected"
+        ? "Conectado"
         : setupRequired
-          ? "Setup required"
-          : "Not connected"}
+          ? "Configuração necessária"
+          : "Não conectado"}
     </Badge>
   );
 }
+

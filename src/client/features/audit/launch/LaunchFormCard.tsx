@@ -46,7 +46,7 @@ export function LaunchFormCard({
     <Card>
       <CardHeader>
         <CardTitle>
-          <h2>Start New Audit</h2>
+          <h2>Iniciar Nova Auditoria</h2>
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -64,9 +64,9 @@ export function LaunchFormCard({
               return (
                 <Input
                   className="lg:col-span-9"
-                  aria-label="Site URL"
+                  aria-label="URL do Site"
                   aria-invalid={urlError ? true : undefined}
-                  placeholder="https://example.com"
+                  placeholder="https://exemplo.com.br"
                   value={field.state.value}
                   onBlur={field.handleBlur}
                   onChange={(event) => {
@@ -87,7 +87,7 @@ export function LaunchFormCard({
                 className="w-full lg:col-span-3"
                 pending={isSubmitting}
               >
-                {isSubmitting ? "Starting..." : "Start Audit"}
+                {isSubmitting ? "Iniciando..." : "Iniciar Auditoria"}
               </Button>
             )}
           </launchForm.Subscribe>
@@ -124,7 +124,7 @@ function LaunchOptions({
 }: Props) {
   return (
     <Field className="rounded-lg border border-border p-3">
-      <FieldLabel htmlFor="audit-max-pages">Max pages</FieldLabel>
+      <FieldLabel htmlFor="audit-max-pages">Limite de páginas</FieldLabel>
       <launchForm.Field name="maxPagesInput">
         {(field) => (
           <Input
@@ -147,17 +147,17 @@ function LaunchOptions({
         )}
       </launchForm.Field>
       <FieldDescription>
-        Enter any value from {MIN_PAGES} to {maxPagesLimit.toLocaleString()}.
+        Insira qualquer valor de {MIN_PAGES} a {maxPagesLimit.toLocaleString()}.
         {maxPagesLimit === RENDERED_MAX_AUDIT_PAGES
-          ? " Audits that render JavaScript are limited to this many pages."
+          ? " Auditorias que renderizam JavaScript são limitadas a essa quantidade de páginas."
           : null}
         {maxPagesLimit < paidMaxPagesLimit ? (
           <>
             {" "}
             <Link to={SUBSCRIBE_ROUTE} search={{ upgrade: true }}>
-              Upgrade
+              Faça upgrade
             </Link>{" "}
-            to crawl up to {paidMaxPagesLimit.toLocaleString()} pages.
+            para rastrear até {paidMaxPagesLimit.toLocaleString()} páginas.
           </>
         ) : null}
       </FieldDescription>
@@ -180,9 +180,9 @@ function LighthouseOptions({ launchForm }: Pick<Props, "launchForm">) {
         </launchForm.Field>
         <FieldLabel
           htmlFor="audit-run-lighthouse"
-          title="Lighthouse measures the performance of your pages and identifies issues."
+          title="O Lighthouse avalia performance, acessibilidade e SEO da página."
         >
-          Include Lighthouse
+          Incluir Lighthouse
         </FieldLabel>
       </div>
 
@@ -192,8 +192,7 @@ function LighthouseOptions({ launchForm }: Pick<Props, "launchForm">) {
         {(runLighthouse) =>
           runLighthouse ? (
             <FieldDescription>
-              We choose a sample of 20 pages to audit, removing pages from
-              duplicate templates.
+              Avaliamos uma amostra de até 20 páginas para auditar métricas e diagnósticos técnicos.
             </FieldDescription>
           ) : null
         }
@@ -222,9 +221,9 @@ function RenderingOptions({
         </launchForm.Field>
         <FieldLabel
           htmlFor="audit-render-javascript"
-          title="Loads each page in a browser before auditing it. Slower."
+          title="Carrega cada página em um navegador antes da auditoria. Mais lento."
         >
-          Render JavaScript
+          Renderizar JavaScript
         </FieldLabel>
       </div>
 

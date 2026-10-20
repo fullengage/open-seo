@@ -162,13 +162,13 @@ export function DashboardPage({
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
             <p className="mb-1 text-xs font-medium uppercase tracking-wider text-muted-foreground">
-              Your website
+              Seu site
             </p>
             <h1 className="text-2xl font-semibold">
-              {activation.domain || "Dashboard"}
+              {activation.domain || "Painel Geral"}
             </h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              Search visibility, links and site health in one place.
+              Visibilidade de busca, links e saúde técnica em um só lugar.
             </p>
           </div>
           <Button
@@ -177,7 +177,7 @@ export function DashboardPage({
             render={<Link to="/p/$projectId/settings" params={{ projectId }} />}
           >
             <Settings />
-            Project settings
+            Configurações do Projeto
           </Button>
         </div>
 
@@ -186,7 +186,7 @@ export function DashboardPage({
         {activationQuery.isError ? (
           <QueryError
             error={activationQuery.error}
-            fallback="Failed to refresh dashboard"
+            fallback="Falha ao atualizar o painel"
             onRetry={() => void activationQuery.refetch()}
             isRetrying={activationQuery.isFetching}
           />
@@ -195,11 +195,12 @@ export function DashboardPage({
         {overviewQuery.isError ? (
           <QueryError
             error={overviewQuery.error}
-            fallback="Failed to load site health"
+            fallback="Falha ao carregar saúde técnica do site"
             onRetry={() => void overviewQuery.refetch()}
             isRetrying={overviewQuery.isFetching}
           />
         ) : null}
+
 
         <DashboardOnboarding
           key={projectId}

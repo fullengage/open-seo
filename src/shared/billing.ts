@@ -5,8 +5,8 @@ export const SUBSCRIBE_ROUTE = "/subscribe";
 // validateSearch reads them, and route options aren't code-split: importing
 // the component would pull its chart into the entry chunk.
 export const BILLING_TABS = [
-  { value: "usage", label: "Usage" },
-  { value: "invoices", label: "Invoices" },
+  { value: "usage", label: "Consumo de Créditos" },
+  { value: "invoices", label: "Faturas" },
 ] as const;
 export type BillingTab = (typeof BILLING_TABS)[number]["value"];
 

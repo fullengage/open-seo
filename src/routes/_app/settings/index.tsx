@@ -42,9 +42,9 @@ function PersonalSettings() {
   return (
     <div className="space-y-10">
       <section className="space-y-3">
-        <SectionHeader title="Appearance" />
+        <SectionHeader title="Aparência" />
         <div className="flex items-center justify-between gap-6">
-          <span className="text-sm">Theme</span>
+          <span className="text-sm">Tema visual</span>
           <ThemePreferenceRadio />
         </div>
       </section>
@@ -57,9 +57,9 @@ function PersonalSettings() {
             <SectionHeader title="Analytics" />
             <div className="flex items-start justify-between gap-6">
               <div>
-                <p className="text-sm">Help improve OpenSEO</p>
+                <p className="text-sm">Ajude a melhorar o OpenSEO</p>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Share analytics and usage data.
+                  Compartilhe dados anônimos de uso.
                 </p>
               </div>
               <Switch
@@ -68,22 +68,23 @@ function PersonalSettings() {
                 onCheckedChange={(checked) => {
                   void updateAnalyticsPreference(checked);
                 }}
-                aria-label="Enable product analytics"
+                aria-label="Ativar analytics do produto"
               />
             </div>
           </section>
         </>
       ) : (
         <section className="space-y-3">
-          <SectionHeader title="About" />
+          <SectionHeader title="Sobre o Sistema" />
           <div className="flex items-center justify-between gap-6">
-            <span className="text-sm">Version</span>
+            <span className="text-sm">Versão</span>
             <span className="font-mono text-sm text-muted-foreground">
               v{version}
             </span>
           </div>
         </section>
       )}
+
 
       <section className="space-y-4 pt-4 border-t border-border/50">
         <SectionHeader title="Infraestrutura, Cotas & Custos de APIs" />

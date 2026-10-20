@@ -234,7 +234,7 @@ function AccountFooter({ ready }: { ready: boolean }) {
       <SidebarMenu>
         <SidebarNavLink
           icon={CircleHelp}
-          label="Help & Community"
+          label="Ajuda & Suporte"
           linkProps={{ to: "/support" }}
         />
         {email ? (
@@ -244,7 +244,7 @@ function AccountFooter({ ready }: { ready: boolean }) {
                 render={
                   <SidebarMenuButton
                     className={navButtonClass}
-                    aria-label="Open account menu"
+                    aria-label="Abrir menu da conta"
                   />
                 }
               >
@@ -259,7 +259,7 @@ function AccountFooter({ ready }: { ready: boolean }) {
                     <DropdownMenuGroup>
                       <DropdownMenuLabel className="flex items-center gap-1.5">
                         <ArrowLeftRight className="size-3" />
-                        Organization
+                        Organização
                       </DropdownMenuLabel>
                       {organizations.map((organization) => (
                         <DropdownMenuItem
@@ -290,7 +290,7 @@ function AccountFooter({ ready }: { ready: boolean }) {
                   }
                 >
                   <Settings className="size-4" />
-                  Settings
+                  Configurações
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   render={
@@ -301,10 +301,10 @@ function AccountFooter({ ready }: { ready: boolean }) {
                   }
                 >
                   <CreditCard className="size-4" />
-                  Billing
+                  Planos & Faturamento
                 </DropdownMenuItem>
                 <DropdownMenuGroup>
-                  <DropdownMenuLabel>Theme</DropdownMenuLabel>
+                  <DropdownMenuLabel>Tema</DropdownMenuLabel>
                   <div className="px-1 pb-1">
                     <ThemePreferenceRadio />
                   </div>
@@ -315,7 +315,7 @@ function AccountFooter({ ready }: { ready: boolean }) {
                   onClick={() => signOutAndRedirect()}
                 >
                   <LogOut className="size-4" />
-                  Sign out
+                  Sair da Conta
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -323,9 +323,10 @@ function AccountFooter({ ready }: { ready: boolean }) {
         ) : ready ? (
           <SidebarNavLink
             icon={Settings}
-            label="Settings"
+            label="Configurações"
             linkProps={{ to: "/settings" }}
           />
+
         ) : (
           // The account row's slot while the session loads.
           <SidebarMenuItem>

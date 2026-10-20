@@ -55,8 +55,9 @@ export function GooglePropertyPicker({
   onSelect,
   onSave,
   saving,
-  saveLabel = "Save property",
+  saveLabel = "Salvar propriedade",
   onRetry,
+
   onReconnect,
   secondaryAction,
   renderActions,
@@ -169,7 +170,7 @@ export function GooglePropertyPicker({
       {!emptyGsc || readOnly ? (
         <div>
           <p className="mb-2 text-sm font-medium">
-            {readOnly ? "Manage Google accounts" : "Choose property"}
+            {readOnly ? "Gerenciar contas Google" : "Escolher propriedade"}
           </p>
           <Button
             ref={trigger}
@@ -185,7 +186,7 @@ export function GooglePropertyPicker({
           >
             <span className="min-w-0">
               <span className="block truncate">
-                {selected?.name ?? "Select a property…"}
+                {selected?.name ?? "Selecionar propriedade…"}
               </span>
               {selectedAccount ? (
                 <span className="mt-0.5 block truncate text-xs text-muted-foreground">
@@ -199,7 +200,7 @@ export function GooglePropertyPicker({
             <div
               id={panelId}
               role="region"
-              aria-label="Google properties"
+              aria-label="Propriedades do Google"
               className="mt-2 overflow-hidden rounded-lg border border-border bg-popover shadow-sm"
               onKeyDown={(event) => handlePropertyKeyDown(event, close)}
             >
@@ -208,8 +209,8 @@ export function GooglePropertyPicker({
                 <Input
                   autoFocus
                   type="search"
-                  aria-label="Search properties or accounts"
-                  placeholder="Search properties or accounts…"
+                  aria-label="Buscar propriedades ou contas"
+                  placeholder="Buscar propriedades ou contas…"
                   value={search}
                   onChange={(event) => setSearch(event.target.value)}
                   className="h-auto min-w-0 border-0 bg-transparent p-0 shadow-none focus-visible:ring-0"
@@ -219,15 +220,16 @@ export function GooglePropertyPicker({
                 {loading ? (
                   <Spinner
                     size="sm"
-                    label="Loading properties…"
+                    label="Carregando propriedades…"
                     className="p-3"
                   />
                 ) : error ? (
                   <QueryError
-                    fallback="Couldn't load properties."
+                    fallback="Não foi possível carregar as propriedades."
                     onRetry={onRetry}
                   />
                 ) : (
+
                   <>
                     {filtered.map((account) => (
                       <div
@@ -354,13 +356,14 @@ export function GooglePropertyPicker({
                   pending={linking}
                 >
                   {linking ? null : <Plus className="size-4" />}
-                  {linking ? "Opening Google…" : "Add Google account"}
+                  {linking ? "Abrindo Google…" : "Adicionar conta Google"}
                 </Button>
               </div>
             </div>
           ) : null}
         </div>
       ) : null}
+
       {renderActions ? (
         renderActions(!canSave || saving)
       ) : (

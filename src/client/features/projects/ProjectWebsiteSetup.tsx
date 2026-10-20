@@ -52,7 +52,7 @@ export function ProjectWebsiteSetup({ projectId }: { projectId: string }) {
           queryKey: ["aiVisibility", projectId],
         }),
       ]);
-      toast.success("Project context saved");
+      toast.success("Contexto do projeto salvo com sucesso");
     },
   });
   if (research)
@@ -95,20 +95,19 @@ export function ProjectWebsiteSetup({ projectId }: { projectId: string }) {
               <Sparkles className="size-5" />
             </div>
             <h1 className="text-2xl font-semibold tracking-tight">
-              Set up AI visibility
+              Configurar Visibilidade em IA
             </h1>
             <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-              We’ll research your brand and find the most relevant topics to
-              monitor.
+              Vamos analisar sua marca e identificar os tópicos e termos mais relevantes para monitorar nas IAs.
             </p>
           </div>
           <Field>
-            <FieldLabel htmlFor="project-website">Website URL</FieldLabel>
+            <FieldLabel htmlFor="project-website">URL do Site</FieldLabel>
             <Input
               id="project-website"
               inputMode="url"
               autoComplete="url"
-              placeholder="Enter your website URL"
+              placeholder="https://meusite.com.br"
               value={website}
               onChange={(event) => setWebsite(event.target.value)}
               required
@@ -117,8 +116,7 @@ export function ProjectWebsiteSetup({ projectId }: { projectId: string }) {
           {researchMutation.isError && (
             <Alert variant="destructive">
               <AlertDescription>
-                We couldn’t research this website. Check the URL, provider
-                settings, and available usage credits, then try again.
+                Não foi possível analisar este site. Verifique a URL e tente novamente.
               </AlertDescription>
             </Alert>
           )}
@@ -129,11 +127,10 @@ export function ProjectWebsiteSetup({ projectId }: { projectId: string }) {
               disabled={!website.trim()}
               className="w-full"
             >
-              Start research
+              Iniciar Análise
             </Button>
             <p className="text-xs leading-relaxed text-muted-foreground">
-              Research and a first run of your prompts use a small amount of
-              usage credits.
+              A análise inicial e teste de prompts utilizarão uma pequena cota de processamento.
             </p>
           </div>
         </form>
