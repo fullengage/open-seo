@@ -65,7 +65,9 @@ export function CompaniesPage() {
 
   const [company, setCompany] = useState<CompanyDetail | null>(null);
   const [segmentResults, setSegmentResults] = useState<CompanyDetail[]>([]);
-  const [activeTab, setActiveTab] = useState<"cnpj" | "segment" | "local_seo" | "kanban">("cnpj");
+  const [activeTab, setActiveTab] = useState<"cnpj" | "segment" | "local_seo" | "kanban">(() =>
+    typeof window !== "undefined" && new URLSearchParams(window.location.search).get("tab") === "kanban" ? "kanban" : "cnpj",
+  );
   const [outreachCompany, setOutreachCompany] = useState<CompanyDetail | null>(null);
 
   const cnpjMutation = useMutation({
@@ -179,7 +181,8 @@ export function CompaniesPage() {
     try {
       // O banco é a única fonte: nada de cópia no navegador (gerava importação de versão velha)
       const existing = await getPipelineLeads();
-      if (existing.some((l) => l.cnpj === targetCompany.cnpj)) {
+      const raiz = (c?: string | null) => (c || "").replace(/\D/g, "").slice(0, 8);
+      if (existing.some((l) => raiz(l.cnpj) === raiz(targetCompany.cnpj))) {
         toast.info("Esta empresa já está no Pipeline Comercial!");
         return;
       }
