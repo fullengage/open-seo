@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
+import { calcIcpScore } from "./icpScore";
+import { hasEnoughFacts as factsAreEnough } from "./factsGenerator";
 import {
-  Kanban,
   Building2,
   Phone,
   Mail,
@@ -37,6 +38,8 @@ import type { PipelineLead, PipelineStage, LeadFact } from "./types";
 import { isRecuperacaoJudicialOuFalencia, checkEmailWarning } from "./types";
 import { OutreachCopyDialog } from "./OutreachCopyDialog";
 import { LeadEnrichmentModal } from "./LeadEnrichmentModal";
+import { LeadConversationsDialog } from "./LeadConversationsDialog";
+import { WeeklyReport } from "./WeeklyReport";
 import {
   getPipelineLeads,
   savePipelineLead,
@@ -48,11 +51,12 @@ import {
 const STORAGE_KEY = "openseo_b2b_pipeline_leads";
 
 const COLUMNS: { id: PipelineStage; label: string; color: string }[] = [
-  { id: "prospect", label: "Prospecção", color: "border-sky-500/40" },
-  { id: "audit_ready", label: "Diagnóstico Pronto", color: "border-amber-500/40" },
-  { id: "outreach_sent", label: "Abordagem Enviada", color: "border-purple-500/40" },
-  { id: "negotiation", label: "Em Negociação", color: "border-blue-500/40" },
-  { id: "won", label: "Contrato Fechado 🏆", color: "border-emerald-500/40" },
+  { id: "prospect", label: "Prospecção", color: "border-t-[#D6C7C2]" },
+  { id: "audit_ready", label: "Diagnóstico Pronto", color: "border-t-[#B08D57]" },
+  { id: "outreach_sent", label: "Abordagem Enviada", color: "border-t-[#8C2430]" },
+  { id: "negotiation", label: "Em Negociação", color: "border-t-[#5A0F1B]" },
+  { id: "won", label: "Contrato Fechado", color: "border-t-[#2B2426]" },
+  { id: "lost", label: "Perdido", color: "border-t-[#9A8F92]" },
 ];
 
 export function LeadsKanban() {
@@ -61,6 +65,7 @@ export function LeadsKanban() {
   const [localMigrationCount, setLocalMigrationCount] = useState<number>(0);
   const [isMigrating, setIsMigrating] = useState(false);
   const [activeOutreachLead, setActiveOutreachLead] = useState<PipelineLead | null>(null);
+  const [activeConversationsLead, setActiveConversationsLead] = useState<PipelineLead | null>(null);
   const [activeEnrichLead, setActiveEnrichLead] = useState<PipelineLead | null>(null);
 
   async function loadLeadsFromDb() {
@@ -109,7 +114,15 @@ export function LeadsKanban() {
       if (res.success) {
         localStorage.removeItem(STORAGE_KEY);
         setLocalMigrationCount(0);
-        toast.success(`${res.count || parsed.length} leads importados para o banco com sucesso!`);
+        {
+          const imported = res.count ?? 0;
+          const skipped = parsed.length - imported;
+          toast.success(
+            skipped > 0
+              ? `${imported} leads importados; ${skipped} já estavam no banco e foram mantidos como estão.`
+              : `${imported} leads importados para o banco com sucesso!`,
+          );
+        }
         await loadLeadsFromDb();
       } else {
         toast.error("Erro ao migrar leads para o banco.");
@@ -131,6 +144,7 @@ export function LeadsKanban() {
       "outreach_sent",
       "negotiation",
       "won",
+      "lost",
     ];
 
     const currentLead = leads.find((l) => l.id === id);
@@ -146,7 +160,7 @@ export function LeadsKanban() {
 
     // Atualização otimista
     const updated = leads.map((lead) =>
-      lead.id === id ? { ...lead, stage: nextStage } : lead
+      lead.id === id ? { ...lead, stage: nextStage, stageChangedAt: new Date().toISOString() } : lead
     );
     setLeads(updated);
 
@@ -180,7 +194,11 @@ export function LeadsKanban() {
     setLeads(updated);
 
     try {
-      await savePipelineLead({ data: { lead: updatedLead } });
+      const res = await savePipelineLead({ data: { lead: updatedLead } });
+      if (res?.success === false) {
+        toast.error("Não foi possível salvar no banco. Tente de novo.");
+        return;
+      }
       toast.success("Dados salvos no banco com sucesso!");
     } catch (err) {
       console.error("Erro ao salvar lead:", err);
@@ -241,8 +259,8 @@ export function LeadsKanban() {
     <div className="space-y-6">
       {/* Barra de Migração se houver leads no localStorage do navegador */}
       {localMigrationCount > 0 && (
-        <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-          <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400">
+        <div className="p-3 bg-[#B08D57]/10 border border-[#B08D57]/30 rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+          <div className="flex items-center gap-2 text-[#8A6B3A] dark:text-[#B08D57]">
             <AlertCircle className="h-4 w-4 shrink-0" />
             <span>
               Você possui <strong>{localMigrationCount} leads</strong> salvos no navegador. Deseja
@@ -253,7 +271,7 @@ export function LeadsKanban() {
             size="sm"
             onClick={handleMigrateLocalLeads}
             disabled={isMigrating}
-            className="h-8 gap-1.5 text-xs font-semibold bg-amber-600 hover:bg-amber-700 text-white shrink-0"
+            className="h-8 gap-1.5 text-xs font-semibold bg-[#B08D57] hover:bg-[#8A6B3A] text-white shrink-0"
           >
             {isMigrating ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -267,11 +285,7 @@ export function LeadsKanban() {
 
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-lg font-bold tracking-tight flex items-center gap-2">
-            <Kanban className="h-5 w-5 text-primary" />
-            Pipeline Comercial & CRM de Prospecção (Anti-Clay)
-          </h2>
-          <p className="text-xs text-muted-foreground mt-0.5">
+          <p className="text-xs text-muted-foreground">
             Geração de abordagem baseada <strong>exclusivamente em fatos medidos</strong> (Crawler,
             PageSpeed e Perfil Google).
           </p>
@@ -281,6 +295,7 @@ export function LeadsKanban() {
           <Badge variant="outline" className="text-xs">
             {leads.length} Leads Ativos
           </Badge>
+          <WeeklyReport leads={leads} />
           <Button
             size="sm"
             onClick={handleAddNewLead}
@@ -319,14 +334,14 @@ export function LeadsKanban() {
           </div>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-6 gap-4">
           {COLUMNS.map((col) => {
             const colLeads = leads.filter((l) => l.stage === col.id);
 
             return (
               <div
                 key={col.id}
-                className={`flex flex-col bg-muted/20 border-t-2 ${col.color} border-x border-b border-border rounded-lg p-3 min-h-[480px] space-y-3`}
+                className={`flex flex-col bg-card/50 border border-border border-t-4 ${col.color} rounded-lg p-3 min-h-[480px] space-y-3`}
               >
                 <div className="flex items-center justify-between pb-1 border-b border-border">
                   <span className="font-semibold text-xs text-foreground uppercase tracking-wider">
@@ -340,14 +355,14 @@ export function LeadsKanban() {
                 <div className="space-y-3 flex-1 overflow-y-auto">
                   {colLeads.map((lead) => {
                     const cleanWhatsapp = (lead.whatsapp || lead.telefone || "").replace(/\D/g, "");
-                    const decisorDisplay = lead.decisorNome || lead.socioPrincipal;
+                    const decisorDisplay = lead.decisorNome;
                     const negativeFacts = (lead.diagnostic?.facts || []).filter(
                       (f) => f.category === "negative"
                     );
-                    const hasEnoughFacts = negativeFacts.length >= 2;
+                    const hasEnoughFacts = factsAreEnough(lead.diagnostic?.facts || []);
                     const hasApprovedDraft = lead.draft?.status === "approved";
                     const isRecuperacao = isRecuperacaoJudicialOuFalencia(lead.razaoSocial);
-                    const emailWarning = checkEmailWarning(lead.email, lead.website);
+                    const emailWarning = checkEmailWarning(lead.decisorEmail || lead.email, lead.website);
 
                     return (
                       <Card
@@ -374,6 +389,24 @@ export function LeadsKanban() {
                             </p>
                           </div>
 
+                          {(() => {
+                            const icp = calcIcpScore(lead);
+                            const tone =
+                              icp.score >= 60
+                                ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-500"
+                                : icp.score >= 40
+                                  ? "border-[#B08D57]/40 bg-[#B08D57]/10 text-[#B08D57]"
+                                  : "border-muted-foreground/30 text-muted-foreground";
+                            return (
+                              <Badge
+                                variant="outline"
+                                title={icp.reasons.join("\n")}
+                                className={`text-[9px] px-1 py-0 h-4 font-bold ${tone}`}
+                              >
+                                ICP {icp.score}
+                              </Badge>
+                            );
+                          })()}
                           {lead.temperatura === "hot" && (
                             <Badge
                               variant="outline"
@@ -385,7 +418,7 @@ export function LeadsKanban() {
                           {lead.temperatura === "warm" && (
                             <Badge
                               variant="outline"
-                              className="text-[9px] px-1 py-0 h-4 border-amber-500/40 bg-amber-500/10 text-amber-500 font-bold gap-0.5"
+                              className="text-[9px] px-1 py-0 h-4 border-[#B08D57]/40 bg-[#B08D57]/10 text-[#B08D57] font-bold gap-0.5"
                             >
                               <SunMedium className="h-2.5 w-2.5" /> Morno
                             </Badge>
@@ -393,7 +426,7 @@ export function LeadsKanban() {
                           {lead.temperatura === "cold" && (
                             <Badge
                               variant="outline"
-                              className="text-[9px] px-1 py-0 h-4 border-sky-500/40 bg-sky-500/10 text-sky-500 font-bold gap-0.5"
+                              className="text-[9px] px-1 py-0 h-4 border-primary/40 bg-primary/10 text-primary font-bold gap-0.5"
                             >
                               <Snowflake className="h-2.5 w-2.5" /> Frio
                             </Badge>
@@ -459,7 +492,7 @@ export function LeadsKanban() {
                               target="_blank"
                               rel="noopener noreferrer"
                               onClick={(e) => e.stopPropagation()}
-                              className="inline-flex items-center gap-1 text-blue-600 hover:underline"
+                              className="inline-flex items-center gap-1 text-primary hover:underline"
                               title="LinkedIn do Decisor"
                             >
                               <Linkedin className="h-3 w-3" />
@@ -477,7 +510,7 @@ export function LeadsKanban() {
                         {/* Alerta de e-mail de contador/terceiro (Item 11) */}
                         {emailWarning.isSuspicious && (
                           <div
-                            className="text-[10px] bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20 rounded px-1.5 py-0.5 flex items-center gap-1"
+                            className="text-[10px] bg-[#B08D57]/10 text-[#8A6B3A] dark:text-[#B08D57] border border-[#B08D57]/20 rounded px-1.5 py-0.5 flex items-center gap-1"
                             title={emailWarning.reason}
                           >
                             <AlertCircle className="h-3 w-3 shrink-0" />
@@ -500,7 +533,7 @@ export function LeadsKanban() {
                               <span>{negativeFacts.length} fatos negativos medidos</span>
                             </div>
                           ) : (
-                            <div className="flex items-center gap-1 text-amber-600 dark:text-amber-400 text-[10px]">
+                            <div className="flex items-center gap-1 text-[#8A6B3A] dark:text-[#B08D57] text-[10px]">
                               <AlertCircle className="h-3 w-3" />
                               <span>Diagnóstico pendente (menos de 2 fatos)</span>
                             </div>
@@ -543,6 +576,19 @@ export function LeadsKanban() {
                               Editar
                             </Button>
 
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-6 text-[10px] px-1.5 font-semibold text-foreground border-border hover:bg-muted"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setActiveConversationsLead(lead);
+                              }}
+                              title="Conversas do lead no ChatHook"
+                            >
+                              Conversas
+                            </Button>
+
                             {/* Botão Gerar Abordagem (conforme Spec: Fatos Medidos) */}
                             <Button
                               variant={hasEnoughFacts ? "default" : "outline"}
@@ -555,7 +601,7 @@ export function LeadsKanban() {
                                   ? "bg-emerald-600 hover:bg-emerald-700 text-white"
                                   : hasEnoughFacts
                                   ? "bg-primary text-primary-foreground hover:bg-primary/90"
-                                  : "text-amber-600 border-amber-500/40 bg-amber-500/5 hover:bg-amber-500/15"
+                                  : "text-[#8A6B3A] border-[#B08D57]/40 bg-[#B08D57]/5 hover:bg-[#B08D57]/15"
                               }`}
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -584,7 +630,7 @@ export function LeadsKanban() {
                                 </>
                               ) : (
                                 <>
-                                  <Activity className="h-2.5 w-2.5 text-amber-500" />
+                                  <Activity className="h-2.5 w-2.5 text-[#B08D57]" />
                                   Diagnóstico
                                 </>
                               )}
@@ -610,7 +656,7 @@ export function LeadsKanban() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              disabled={col.id === "won"}
+                              disabled={col.id === "lost"}
                               className="h-5 w-5 p-0 text-primary"
                               onClick={(e) => handleMove(lead.id, "next", e)}
                               title="Avançar próxima etapa"
@@ -653,6 +699,12 @@ export function LeadsKanban() {
       )}
 
       {/* Dialog: Gerador de Abordagem só com Fatos Medidos */}
+      {activeConversationsLead && (
+        <LeadConversationsDialog
+          lead={activeConversationsLead}
+          onClose={() => setActiveConversationsLead(null)}
+        />
+      )}
       {activeOutreachLead && (
         <OutreachCopyDialog
           lead={activeOutreachLead}

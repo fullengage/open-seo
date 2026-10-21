@@ -68,16 +68,16 @@ describe("factsGenerator - Spec: Gerar Abordagem só com fatos medidos", () => {
     expect(res.draft).toBeDefined();
 
     const draft = res.draft!;
-    expect(draft.subject).toBe("Lagune no Google: sem descrição própria nas buscas");
+    expect(draft.subject).toBe("Lagune no Google: carregamento lento no celular");
     expect(draft.body).toContain("Olá, Eugênio, tudo bem?");
     expect(draft.body).toContain("Sou o Richard, da Fullweb.");
     expect(draft.body).toContain("Olhei hoje como a Lagune aparece para quem procura piscinas em Campinas, e separei 3 pontos:");
     expect(draft.body).toContain(
-      "1. Quando alguém procura Lagune, o Google mostra como descrição um trecho aleatório da página, porque o site não tem uma descrição própria."
+      "2. Quando alguém procura Lagune, o Google mostra como descrição um trecho aleatório da página, porque o site não tem uma descrição própria."
     );
-    expect(draft.body).toContain("2. O conteúdo da página inicial ainda fala de 2019/2020.");
+    expect(draft.body).toContain("3. O conteúdo da página inicial ainda fala de 2019/2020.");
     expect(draft.body).toContain(
-      "3. No celular, a página inicial levou 6,2 s para carregar o conteúdo principal no teste do Google."
+      "1. No celular, a página inicial levou 6,2 s para carregar o conteúdo principal no teste do Google."
     );
     expect(draft.body).toContain("O perfil no Google tem nota 4,7.");
     expect(draft.body).toContain('É só responder "pode mandar".');

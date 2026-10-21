@@ -111,6 +111,14 @@ export const CompanyService = {
     const formattedUrl = url.startsWith("http") ? url : `https://${url}`;
     const nowIso = new Date().toISOString();
     const facts: any[] = [];
+    let siteUnavailable = false;
+    const host = (() => {
+      try {
+        return new URL(formattedUrl).hostname.replace(/^www\./, "");
+      } catch {
+        return formattedUrl;
+      }
+    })();
 
     try {
       const response = await fetch(formattedUrl, {
@@ -122,8 +130,40 @@ export const CompanyService = {
         signal: AbortSignal.timeout(6000),
       });
 
-      if (response.ok) {
-        const html = await response.text();
+      const html = await response.text().catch(() => "");
+      const finalUrl = response.url || formattedUrl;
+      const isCritical = /Há um erro crítico no seu site|There has been a critical error on (this|your) website/i.test(html);
+      const isParked =
+        /\/lander\b/.test(finalUrl) ||
+        /está hospedado gratuitamente, cortesia da GoDaddy|Adquira este domínio|This domain is parked|domain is for sale/i.test(html);
+
+      if (!response.ok || isCritical) {
+        siteUnavailable = true;
+        facts.push({
+          id: `fact-down-${Date.now()}`,
+          type: "site_down",
+          category: "negative",
+          source: "Crawler",
+          date: nowIso,
+          value: isCritical ? "erro crítico do WordPress" : `HTTP ${response.status}`,
+          phrase: isCritical
+            ? `Quando abri ${host} hoje, o site mostrou a mensagem "Há um erro crítico no seu site" e não carregou para o visitante.`
+            : `Quando abri ${host} hoje, o site mostrou um erro e não carregou para o visitante.`,
+        });
+      } else if (isParked) {
+        siteUnavailable = true;
+        facts.push({
+          id: `fact-parked-${Date.now()}`,
+          type: "parked_domain",
+          category: "negative",
+          source: "Crawler",
+          date: nowIso,
+          value: host,
+          phrase: `O endereço ${host} hoje mostra uma página do provedor de domínio, e não o site da ${companyName}.`,
+        });
+      }
+
+      if (response.ok && !isCritical && !isParked) {
 
         // 1. Meta Description
         const descMatch =
@@ -156,7 +196,7 @@ export const CompanyService = {
         } else {
           const h1Text = h1Match[1].replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim();
           const lowerH1 = h1Text.toLowerCase();
-          const genericTerms = ["home", "início", "inicio", "bem-vindo", "bem vindo", companyName.toLowerCase()];
+          const genericTerms = ["home", "início", "inicio", "bem-vindo", "bem vindo", "contato", "contatos", "fale conosco", companyName.toLowerCase()];
           if (h1Text.length < 4 || genericTerms.includes(lowerH1)) {
             facts.push({
               id: `fact-h1-${Date.now()}`,
@@ -204,7 +244,64 @@ export const CompanyService = {
         }
       }
     } catch {
-      // Ignora falha de crawl da URL
+      // Não abriu (DNS, timeout, certificado): para o visitante é site fora do ar
+      siteUnavailable = true;
+      facts.push({
+        id: `fact-down-${Date.now()}`,
+        type: "site_down",
+        category: "negative",
+        source: "Crawler",
+        date: nowIso,
+        value: "não abriu",
+        phrase: `Quando tentei abrir ${host} hoje, o site não carregou.`,
+      });
+    }
+
+    // 5. PageSpeed (celular) com a chave da plataforma: LCP > 4 s vira fato
+    const psiKey = process.env.GOOGLE_PAGESPEED_API_KEY;
+    if (psiKey && !siteUnavailable) {
+      try {
+        const psiUrl = new URL("https://www.googleapis.com/pagespeedonline/v5/runPagespeed");
+        psiUrl.searchParams.set("url", formattedUrl);
+        psiUrl.searchParams.set("strategy", "MOBILE");
+        psiUrl.searchParams.set("category", "PERFORMANCE");
+        psiUrl.searchParams.set("key", psiKey);
+        const psiRes = await fetch(psiUrl.toString(), { signal: AbortSignal.timeout(60_000) });
+        if (psiRes.ok) {
+          const psi = (await psiRes.json()) as {
+            lighthouseResult?: {
+              audits?: Record<string, { numericValue?: number }>;
+              categories?: { performance?: { score?: number | null } };
+            };
+          };
+          const lcpMs = psi.lighthouseResult?.audits?.["largest-contentful-paint"]?.numericValue;
+          const perf = psi.lighthouseResult?.categories?.performance?.score;
+          if (typeof lcpMs === "number" && lcpMs > 4000) {
+            const secs = (lcpMs / 1000).toFixed(1).replace(".", ",");
+            facts.push({
+              id: `fact-lcp-${Date.now()}`,
+              type: "slow_lcp_mobile",
+              category: "negative",
+              source: "PageSpeed",
+              date: nowIso,
+              value: `${secs} s`,
+              phrase: `No celular, a página inicial levou ${secs} segundos para carregar o conteúdo principal no teste do Google (PageSpeed).`,
+            });
+          } else if (typeof perf === "number") {
+            facts.push({
+              id: `fact-psi-${Date.now()}`,
+              type: "slow_lcp_mobile",
+              category: "diagnostic_only",
+              source: "PageSpeed",
+              date: nowIso,
+              value: Math.round(perf * 100),
+              phrase: `PageSpeed no celular: ${Math.round(perf * 100)}.`,
+            });
+          }
+        }
+      } catch {
+        // PageSpeed indisponível: segue só com os fatos do crawler
+      }
     }
 
     return {

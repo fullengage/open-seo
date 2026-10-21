@@ -27,7 +27,8 @@ import { Input } from "@/client/components/ui/input";
 import { Textarea } from "@/client/components/ui/textarea";
 import { Badge } from "@/client/components/ui/badge";
 import { toast } from "sonner";
-import { getCompanyByCnpj } from "@/serverFunctions/companies";
+import { enrichLeadAll, getCompanyByCnpj } from "@/serverFunctions/companies";
+import { calcIcpScore } from "./icpScore";
 import type { PipelineLead, LeadTemperature } from "./types";
 
 interface LeadEnrichmentModalProps {
@@ -47,7 +48,7 @@ export function LeadEnrichmentModal({
   const [isAutoEnriching, setIsAutoEnriching] = useState(false);
 
   // Form states
-  const [decisorNome, setDecisorNome] = useState(lead.decisorNome || lead.socioPrincipal || "");
+  const [decisorNome, setDecisorNome] = useState(lead.decisorNome || "");
   const [decisorCargo, setDecisorCargo] = useState(lead.decisorCargo || "Sócio-Administrador");
   const [whatsapp, setWhatsapp] = useState(lead.whatsapp || lead.telefone || "");
   const [decisorEmail, setDecisorEmail] = useState(lead.decisorEmail || lead.email || "");
@@ -77,6 +78,44 @@ export function LeadEnrichmentModal({
 
   const companyTitle = lead.nomeFantasia || lead.razaoSocial;
 
+  const [isEnrichingAll, setIsEnrichingAll] = useState(false);
+  const [extra, setExtra] = useState<Partial<PipelineLead>>({});
+
+  async function handleEnrichAll() {
+    setIsEnrichingAll(true);
+    try {
+      const current: PipelineLead = {
+        ...lead,
+        ...extra,
+        website: website.trim() || null,
+        instagram: instagram.trim() || null,
+        linkedin: linkedin.trim() || null,
+        decisorEmail: decisorEmail.trim() || null,
+        porte,
+        capitalSocial,
+        socios,
+      };
+      const { patch } = await enrichLeadAll({ data: { lead: current } });
+      if (patch.website) setWebsite(patch.website);
+      if (patch.instagram) setInstagram(patch.instagram);
+      if (patch.linkedin) setLinkedin(patch.linkedin);
+      if (patch.porte) setPorte(patch.porte);
+      if (patch.capitalSocial) setCapitalSocial(patch.capitalSocial);
+      if (patch.socios?.length) setSocios(patch.socios);
+      setExtra({
+        enrichment: patch.enrichment,
+        diagnostic: patch.diagnostic,
+        municipio: patch.municipio ?? lead.municipio,
+        uf: patch.uf || lead.uf,
+      });
+      toast.success("Enriquecimento concluído. Confira e clique em Salvar.");
+    } catch {
+      toast.error("Não foi possível concluir o enriquecimento.");
+    } finally {
+      setIsEnrichingAll(false);
+    }
+  }
+
   async function handleAutoEnrich() {
     setIsAutoEnriching(true);
     try {
@@ -95,13 +134,7 @@ export function LeadEnrichmentModal({
       if (data.email && !decisorEmail) setDecisorEmail(data.email);
 
       if (data.socios && data.socios.length > 0) {
-        setSocios(data.socios);
-        if (!decisorNome) {
-          setDecisorNome(data.socios[0].nome);
-          if (data.socios[0].qualificacaoDescricao) {
-            setDecisorCargo(data.socios[0].qualificacaoDescricao);
-          }
-        }
+        setSocios(data.socios); // o decisor é escolhido pelo Richard, nunca o 1º sócio
       }
 
       // Suggest website if email has a custom domain
@@ -123,6 +156,7 @@ export function LeadEnrichmentModal({
   function handleSave() {
     const updated: PipelineLead = {
       ...lead,
+      ...extra,
       decisorNome: decisorNome.trim() || null,
       decisorCargo: decisorCargo.trim() || null,
       whatsapp: whatsapp.trim() || null,
@@ -179,6 +213,25 @@ export function LeadEnrichmentModal({
 
           <div className="flex items-center gap-2">
             <Button
+              size="sm"
+              onClick={handleEnrichAll}
+              disabled={isEnrichingAll}
+              className="gap-1.5 text-xs font-semibold"
+              title="Receita, site, tecnologias, redes, domínio, e-mail, velocidade, diagnóstico, Google Maps e IA"
+            >
+              {isEnrichingAll ? (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  Enriquecendo… (até 2 min)
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-3.5 w-3.5" />
+                  Enriquecer tudo
+                </>
+              )}
+            </Button>
+            <Button
               variant="outline"
               size="sm"
               onClick={handleAutoEnrich}
@@ -203,6 +256,52 @@ export function LeadEnrichmentModal({
             </Button>
           </div>
         </div>
+
+        {(() => {
+          const enr = extra.enrichment ?? lead.enrichment;
+          if (!enr) return null;
+          const merged: PipelineLead = { ...lead, ...extra, website: website || null, porte, capitalSocial, socios, decisorNome: decisorNome || null, decisorEmail: decisorEmail || null };
+          const icp = calcIcpScore(merged);
+          const pessoa = decisorNome || socios[0]?.nome || "";
+          const linkedinSearch = pessoa
+            ? `https://www.google.com/search?q=${encodeURIComponent(`site:linkedin.com/in "${pessoa}" "${companyTitle}"`)}`
+            : null;
+          return (
+            <div className="rounded-lg border border-border bg-muted/30 p-3 space-y-2">
+              <div className="flex flex-wrap items-center gap-2 text-xs">
+                <Badge variant="outline" className="font-bold">ICP {icp.score}</Badge>
+                {enr.ai ? (
+                  <Badge variant="outline">
+                    {enr.ai.modelo} · aderência IA {enr.ai.aderenciaIcp}
+                  </Badge>
+                ) : null}
+                <span className="text-muted-foreground">
+                  Enriquecido em {new Date(enr.at).toLocaleString("pt-BR")}
+                </span>
+                {linkedinSearch ? (
+                  <a href={linkedinSearch} target="_blank" rel="noreferrer" className="text-primary underline">
+                    Procurar {pessoa.split(" ")[0]} no LinkedIn
+                  </a>
+                ) : null}
+              </div>
+              {enr.ai ? <p className="text-xs">{enr.ai.resumo}</p> : null}
+              <table className="w-full text-[11px]">
+                <tbody>
+                  {enr.items.map((it, i) => (
+                    <tr key={i} className="border-t border-border/50">
+                      <td className="py-1 pr-2 font-medium text-foreground/80 whitespace-nowrap">{it.campo}</td>
+                      <td className="py-1 pr-2 break-all">{it.valor}</td>
+                      <td className="py-1 text-muted-foreground whitespace-nowrap">{it.fonte}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {enr.mapsSkipped ? (
+                <p className="text-[11px] text-[#8A6B3A]">Google Maps não consultado: {enr.mapsSkipped}.</p>
+              ) : null}
+            </div>
+          );
+        })()}
 
         {/* Navigation Tabs */}
         <div className="flex border-b border-border gap-6">
@@ -347,7 +446,7 @@ export function LeadEnrichmentModal({
 
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-foreground flex items-center gap-1">
-                  <Mail className="h-3 w-3 text-sky-500" />
+                  <Mail className="h-3 w-3 text-primary" />
                   E-mail Direto do Decisor
                 </label>
                 <Input
@@ -361,7 +460,7 @@ export function LeadEnrichmentModal({
 
               <div className="space-y-1.5 md:col-span-2">
                 <label className="text-xs font-semibold text-foreground flex items-center gap-1">
-                  <Linkedin className="h-3 w-3 text-blue-600" />
+                  <Linkedin className="h-3 w-3 text-primary" />
                   Perfil do LinkedIn do Decisor
                 </label>
                 <Input
@@ -409,7 +508,7 @@ export function LeadEnrichmentModal({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-foreground flex items-center gap-1">
-                  <Instagram className="h-3 w-3 text-pink-500" />
+                  <Instagram className="h-3 w-3 text-primary" />
                   Instagram da Empresa
                 </label>
                 <Input
@@ -422,7 +521,7 @@ export function LeadEnrichmentModal({
 
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-foreground flex items-center gap-1">
-                  <Linkedin className="h-3 w-3 text-blue-600" />
+                  <Linkedin className="h-3 w-3 text-primary" />
                   LinkedIn Institucional
                 </label>
                 <Input
@@ -463,11 +562,11 @@ export function LeadEnrichmentModal({
                   onClick={() => setTemperatura("warm")}
                   className={`flex items-center justify-center gap-2 p-2.5 rounded-lg border text-xs font-semibold transition-all ${
                     temperatura === "warm"
-                      ? "border-amber-500 bg-amber-500/10 text-amber-500 shadow-xs"
+                      ? "border-[#B08D57] bg-[#B08D57]/10 text-[#B08D57] shadow-xs"
                       : "border-border text-muted-foreground hover:bg-muted/50"
                   }`}
                 >
-                  <SunMedium className="h-4 w-4 text-amber-500" />
+                  <SunMedium className="h-4 w-4 text-[#B08D57]" />
                   Morno 🌤️ (Em Qualificação)
                 </button>
 
@@ -476,11 +575,11 @@ export function LeadEnrichmentModal({
                   onClick={() => setTemperatura("cold")}
                   className={`flex items-center justify-center gap-2 p-2.5 rounded-lg border text-xs font-semibold transition-all ${
                     temperatura === "cold"
-                      ? "border-sky-500 bg-sky-500/10 text-sky-500 shadow-xs"
+                      ? "border-primary bg-primary/10 text-primary shadow-xs"
                       : "border-border text-muted-foreground hover:bg-muted/50"
                   }`}
                 >
-                  <Snowflake className="h-4 w-4 text-sky-500" />
+                  <Snowflake className="h-4 w-4 text-primary" />
                   Frio ❄️ (Primeiro Contato)
                 </button>
               </div>

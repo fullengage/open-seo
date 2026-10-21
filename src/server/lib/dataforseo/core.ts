@@ -67,6 +67,9 @@ function createAuthenticatedFetch(
   maxServerErrorRetries = DATAFORSEO_MAX_RETRIES,
 ) {
   return async (url: RequestInfo, init?: RequestInit): Promise<Response> => {
+    // Fullweb: DataForSEO desativado (decisão do Richard, 2026-10-20). Dados de busca vêm só do Google Search Console.
+    if (process.env.FULLWEB_DATAFORSEO !== "on")
+      throw new Error("Recurso desativado: este sistema usa apenas dados gratuitos do Google Search Console.");
     const apiKey = await getRequiredEnvValue("DATAFORSEO_API_KEY");
     const headers = new Headers(init?.headers);
     headers.set("Authorization", `Basic ${apiKey}`);

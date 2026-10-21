@@ -12,6 +12,12 @@ const FORBIDDEN_WORDS = [
   "equipe de estrategia b2b",
 ];
 
+// Site fora do ar ou domínio estacionado já é motivo suficiente; o resto pede 2 fatos.
+export function hasEnoughFacts(facts: LeadFact[]): boolean {
+  const neg = facts.filter((f) => f.category === "negative");
+  return neg.length >= 2 || neg.some((f) => f.type === "site_down" || f.type === "parked_domain");
+}
+
 export function getShortSubjectFact(fact: LeadFact): string {
   switch (fact.type) {
     case "no_meta_description":
@@ -24,6 +30,12 @@ export function getShortSubjectFact(fact: LeadFact): string {
       return "carregamento lento no celular";
     case "not_in_top_10":
       return "posicionamento nas buscas";
+    case "site_down":
+      return "site fora do ar";
+    case "google_profile_no_site":
+      return "perfil do Google sem o site";
+    case "parked_domain":
+      return "endereço do site sem a empresa";
     default:
       return "diagnóstico no Google";
   }
@@ -66,11 +78,28 @@ export function generateMeasuredOutreach(lead: PipelineLead): {
 
   // 2. Coletar fatos medidos
   const allFacts = lead.diagnostic?.facts || [];
-  const negativeFacts = allFacts.filter((f) => f.category === "negative");
+  // Ordem de força: busca no Google > PageSpeed > meta description > H1 > ano antigo
+  const FACT_PRIORITY: LeadFact["type"][] = [
+    "site_down",
+    "parked_domain",
+    "not_in_top_10",
+    "slow_lcp_mobile",
+    "google_profile_no_site",
+    "no_meta_description",
+    "generic_or_missing_h1",
+    "outdated_year",
+  ];
+  const rank = (t: LeadFact["type"]) => {
+    const i = FACT_PRIORITY.indexOf(t);
+    return i === -1 ? FACT_PRIORITY.length : i;
+  };
+  const negativeFacts = allFacts
+    .filter((f) => f.category === "negative")
+    .sort((a, b) => rank(a.type) - rank(b.type));
   const positiveFacts = allFacts.filter((f) => f.category === "positive");
 
   // Bloquear se houver menos de 2 fatos negativos
-  if (negativeFacts.length < 2) {
+  if (!hasEnoughFacts(allFacts)) {
     return {
       success: false,
       error: "needs_diagnostic",
@@ -96,7 +125,7 @@ export function generateMeasuredOutreach(lead: PipelineLead): {
 
   const body = `Olá, ${firstName}, tudo bem?
 
-Sou o Richard, da Fullweb. Olhei hoje como a ${companyName} aparece para quem procura ${segmento}, e separei ${factsToUse.length} pontos:
+Sou o Richard, da Fullweb. Olhei hoje como a ${companyName} aparece para quem procura ${segmento}, e separei ${factsToUse.length === 1 ? "um ponto" : `${factsToUse.length} pontos`}:
 
 ${factItemsText}${positiveParagraph}
 

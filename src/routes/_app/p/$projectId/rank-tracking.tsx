@@ -14,7 +14,7 @@ function RankTrackingLayout() {
       <div className="mx-auto max-w-7xl space-y-4">
         <PageHeader
           title="Monitor de Posições"
-          description="Monitore o posicionamento de palavras-chave nos mecanismos de busca"
+          description="Posição média das buscas que trazem pessoas ao seu site, segundo o Google Search Console"
           backLink={
             projectId && configId ? (
               <BackLink to="/p/$projectId/rank-tracking" params={{ projectId }}>

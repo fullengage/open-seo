@@ -3,7 +3,8 @@ export type PipelineStage =
   | "audit_ready"
   | "outreach_sent"
   | "negotiation"
-  | "won";
+  | "won"
+  | "lost";
 
 export type LeadTemperature = "cold" | "warm" | "hot";
 
@@ -16,12 +17,40 @@ export interface LeadFact {
     | "slow_lcp_mobile"
     | "no_structured_data"
     | "not_in_top_10"
-    | "high_google_rating";
+    | "high_google_rating"
+    | "site_down"
+    | "parked_domain"
+    | "google_profile_no_site";
   category: "negative" | "positive" | "diagnostic_only";
   source: "Crawler" | "PageSpeed" | "SERP (Apify)" | "Perfil Google (Apify)";
   date: string;
   value?: string | number | null;
   phrase: string;
+}
+
+export interface EnrichmentItem {
+  campo: string;
+  valor: string;
+  fonte: string;
+  data: string;
+}
+
+export interface LeadAiInsight {
+  resumo: string;
+  modelo: "B2B" | "B2C" | "misto" | "indefinido";
+  segmento: string;
+  aderenciaIcp: number;
+  motivo: string;
+  buscaSugerida: string;
+  modelo_ia: string;
+  data: string;
+}
+
+export interface LeadEnrichment {
+  at: string;
+  items: EnrichmentItem[];
+  ai: LeadAiInsight | null;
+  mapsSkipped: string | null;
 }
 
 export interface LeadDiagnostic {
@@ -57,6 +86,8 @@ export interface PipelineLead {
   socioPrincipal?: string | null;
   stage: PipelineStage;
   createdAt: string;
+  /** Quando o lead entrou na etapa atual (gravado ao mover no funil). */
+  stageChangedAt?: string;
   notes?: string;
 
   // Campos de Enriquecimento B2B (360° / CRM & Prospecção):
@@ -84,6 +115,7 @@ export interface PipelineLead {
   diagnostic?: LeadDiagnostic | null;
   draft?: OutreachDraft | null;
   naoContatar?: boolean;
+  enrichment?: LeadEnrichment | null;
 }
 
 export interface ProgrammaticPage {

@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { CompanyService } from "@/server/features/companies/services/CompanyService";
+import { LeadEnrichmentService } from "@/server/features/companies/services/LeadEnrichmentService";
 import {
   companyLookupInputSchema,
   companySearchSegmentInputSchema,
@@ -34,3 +35,8 @@ export const inspectWebsiteForFacts = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     return CompanyService.inspectWebsiteFacts(data.url, data.companyName);
   });
+
+// "Enriquecer tudo": Receita, site, tecnologias, redes, Registro.br, DNS, CrUX, diagnóstico, Google Maps (Apify) e IA
+export const enrichLeadAll = createServerFn({ method: "POST" })
+  .validator(z.object({ lead: z.any() }))
+  .handler(async ({ data }) => LeadEnrichmentService.enrich(data.lead));

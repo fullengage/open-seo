@@ -5,6 +5,6 @@ import { requireAuthenticatedContext } from "@/serverFunctions/middleware";
 export const getSeoApiKeyStatus = createServerFn({ method: "GET" })
   .middleware(requireAuthenticatedContext)
   .handler((): { configured: boolean } => {
-    // Modo autônomo ativo: APIs gratuitas do Google e base local dispensam DataForSEO
+    // Fullweb / ChatHook: o sistema funciona sem DataForSEO (dados de busca vêm do Search Console); nada a configurar.
     return { configured: true };
   });

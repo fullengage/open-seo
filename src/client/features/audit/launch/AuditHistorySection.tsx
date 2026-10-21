@@ -70,9 +70,9 @@ function AuditHistoryTable({
           <TableRow>
             <TableHead>Data</TableHead>
             <TableHead>URL</TableHead>
-            <TableHead>Status</TableHead>
+            <TableHead>Situação</TableHead>
             <TableHead>Páginas</TableHead>
-            <TableHead>Lighthouse</TableHead>
+            <TableHead>Velocidade</TableHead>
             <TableHead />
           </TableRow>
         </TableHeader>

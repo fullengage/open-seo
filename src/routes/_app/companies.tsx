@@ -26,7 +26,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/cli
 import { Badge } from "@/client/components/ui/badge";
 import { toast } from "sonner";
 import { getCompanyByCnpj, searchCompaniesBySegment } from "@/serverFunctions/companies";
-import { savePipelineLead } from "@/serverFunctions/pipelineLeads";
+import { getPipelineLeads, savePipelineLead } from "@/serverFunctions/pipelineLeads";
 import type { CompanyDetail } from "@/types/schemas/company";
 import type { PipelineLead } from "@/client/features/companies/types";
 import { isRecuperacaoJudicialOuFalencia, checkEmailWarning } from "@/client/features/companies/types";
@@ -65,7 +65,9 @@ export function CompaniesPage() {
 
   const [company, setCompany] = useState<CompanyDetail | null>(null);
   const [segmentResults, setSegmentResults] = useState<CompanyDetail[]>([]);
-  const [activeTab, setActiveTab] = useState<"cnpj" | "segment" | "local_seo" | "kanban">("cnpj");
+  const [activeTab, setActiveTab] = useState<"cnpj" | "segment" | "local_seo" | "kanban">(() =>
+    typeof window !== "undefined" && new URLSearchParams(window.location.search).get("tab") === "kanban" ? "kanban" : "cnpj",
+  );
   const [outreachCompany, setOutreachCompany] = useState<CompanyDetail | null>(null);
 
   const cnpjMutation = useMutation({
@@ -176,12 +178,11 @@ export function CompaniesPage() {
       if (!confirmAdd) return;
     }
 
-    const storageKey = "openseo_b2b_pipeline_leads";
     try {
-      const saved = localStorage.getItem(storageKey);
-      const localLeads: PipelineLead[] = saved ? JSON.parse(saved) : [];
-
-      if (localLeads.some((l) => l.cnpj === targetCompany.cnpj)) {
+      // O banco é a única fonte: nada de cópia no navegador (gerava importação de versão velha)
+      const existing = await getPipelineLeads();
+      const raiz = (c?: string | null) => (c || "").replace(/\D/g, "").slice(0, 8);
+      if (existing.some((l) => raiz(l.cnpj) === raiz(targetCompany.cnpj))) {
         toast.info("Esta empresa já está no Pipeline Comercial!");
         return;
       }
@@ -198,20 +199,23 @@ export function CompaniesPage() {
         cnae: targetCompany.cnae,
         cnaeDescricao: targetCompany.cnaeDescricao,
         socioPrincipal: targetCompany.socios?.[0]?.nome || null,
+        porte: targetCompany.porte ?? null,
+        capitalSocial: targetCompany.capitalSocial ?? null,
+        bairro: targetCompany.bairro ?? null,
+        cep: targetCompany.cep ?? null,
+        socios: (targetCompany.socios || []).map((s) => ({
+          nome: s.nome,
+          qualificacaoDescricao: s.qualificacaoDescricao ?? null,
+        })),
         stage: "prospect",
         createdAt: new Date().toISOString(),
       };
 
-      // Salva no banco de dados central PostgreSQL (Item 2)
-      try {
-        await savePipelineLead({ data: { lead: newLead } });
-      } catch (err) {
-        console.error("Erro ao salvar lead no PostgreSQL:", err);
+      const res = await savePipelineLead({ data: { lead: newLead } });
+      if (res?.success === false) {
+        toast.error("Não foi possível salvar no banco. Tente de novo.");
+        return;
       }
-
-      // Atualiza também localmente para sincronia imediata
-      const updated = [newLead, ...localLeads];
-      localStorage.setItem(storageKey, JSON.stringify(updated));
       toast.success(
         `${targetCompany.nomeFantasia || targetCompany.razaoSocial} adicionada ao Pipeline Comercial!`
       );
@@ -221,16 +225,15 @@ export function CompaniesPage() {
   }
 
   return (
-    <div className="flex-1 space-y-6 p-6">
+    <div className="flex-1 space-y-5 p-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
             <Building2 className="h-6 w-6 text-primary" />
-            Inteligência B2B, SEO Local & Prospecção (Anti-Clay)
+            Prospecção B2B
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Mapeamento de empresas na Receita Federal (QSA), landing pages programáticas locais,
-            pipeline de leads e gerador de copy de abordagem de vendas.
+            Empresas da Receita Federal, diagnóstico medido e abordagem aprovada por você.
           </p>
         </div>
       </div>
@@ -382,7 +385,7 @@ export function CompaniesPage() {
                         className="gap-1.5"
                       >
                         <Sparkles className="h-4 w-4 text-primary" />
-                        Gerar Abordagem (Anti-Clay)
+                        Gerar Abordagem
                       </Button>
 
                       <Button
@@ -486,7 +489,7 @@ export function CompaniesPage() {
                             </p>
                             {/* Alerta de e-mail suspeito (Item 11) */}
                             {checkEmailWarning(company.email).isSuspicious && (
-                              <p className="text-xs text-amber-600 dark:text-amber-400 font-medium mt-0.5">
+                              <p className="text-xs text-[#8A6B3A] dark:text-[#B08D57] font-medium mt-0.5">
                                 ⚠️ {checkEmailWarning(company.email).reason}
                               </p>
                             )}
@@ -747,7 +750,7 @@ export function CompaniesPage() {
                               {/* Alerta de e-mail suspeito (Item 11) */}
                               {emailWarning.isSuspicious && (
                                 <span
-                                  className="text-[10px] bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20 px-1 rounded ml-1"
+                                  className="text-[10px] bg-[#B08D57]/10 text-[#8A6B3A] dark:text-[#B08D57] border border-[#B08D57]/20 px-1 rounded ml-1"
                                   title={emailWarning.reason}
                                 >
                                   ⚠️ E-mail Terceiro / Confirmar

@@ -33,6 +33,9 @@ import { getActiveOrganizationId } from "@/lib/auth-session";
 // redirect would otherwise replace the URL and lose them. See googleLinkError.ts.
 captureGoogleLinkError();
 
+import "@/client/lib/staleDeployReload";
+import "@/client/lib/chatwootBridge";
+
 export const Route = createRootRoute({
   head: () => ({
     meta: [

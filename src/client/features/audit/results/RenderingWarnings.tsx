@@ -26,8 +26,8 @@ export function RenderingWarnings({ data }: { data: AuditResultsData }) {
           </AlertTitle>
           <AlertDescription>
             {rendered
-              ? "They were still loading after rendering, so we couldn't check them."
-              : "Turn on Render JavaScript and run the audit again to check them."}
+              ? "Elas ainda estavam carregando, então não deu para verificar."
+              : "Ligue \"Renderizar JavaScript\" e rode a auditoria de novo para verificá-las."}
           </AlertDescription>
         </Alert>
       )}

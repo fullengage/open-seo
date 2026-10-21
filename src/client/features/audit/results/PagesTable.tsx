@@ -109,14 +109,14 @@ function buildPagesColumns({
       meta: { cellClassName: "max-w-[240px] truncate" },
     }),
     pageColumnHelper.accessor("statusCode", {
-      header: ({ column }) => <SortableHeader column={column} label="Status" />,
+      header: ({ column }) => <SortableHeader column={column} label="Situação" />,
       // A failed fetch or render has no HTTP status to show.
       cell: ({ getValue, row }) =>
         row.original.fetchClass === "error" ? (
           <Badge
             variant="destructive"
             size="sm"
-            title="Fetching or rendering failed, so this page was not checked for content issues."
+            title="Não conseguimos carregar esta página, então o conteúdo dela não foi verificado."
           >
             Failed
           </Badge>
@@ -126,7 +126,7 @@ function buildPagesColumns({
       sortingFn: nullableNumberSort,
     }),
     pageColumnHelper.accessor("title", {
-      header: ({ column }) => <SortableHeader column={column} label="Title" />,
+      header: ({ column }) => <SortableHeader column={column} label="Título" />,
       cell: ({ getValue, row }) => {
         if (isRedirect(row.original)) {
           const target = row.original.redirectUrl;
@@ -157,13 +157,13 @@ function buildPagesColumns({
         hasAnalyzedContent(row.original) ? getValue() : <EmptyCell />,
     }),
     pageColumnHelper.accessor("wordCount", {
-      header: ({ column }) => <SortableHeader column={column} label="Words" />,
+      header: ({ column }) => <SortableHeader column={column} label="Palavras" />,
       cell: ({ getValue, row }) =>
         hasAnalyzedContent(row.original) ? getValue() : <EmptyCell />,
     }),
     pageColumnHelper.display({
       id: "images",
-      header: ({ column }) => <SortableHeader column={column} label="Images" />,
+      header: ({ column }) => <SortableHeader column={column} label="Imagens" />,
       cell: ({ row }) => {
         if (!hasAnalyzedContent(row.original)) return <EmptyCell />;
         return row.original.imagesMissingAlt > 0 ? (
@@ -180,7 +180,7 @@ function buildPagesColumns({
         left.original.imagesTotal - right.original.imagesTotal,
     }),
     pageColumnHelper.accessor("responseTimeMs", {
-      header: ({ column }) => <SortableHeader column={column} label="Speed" />,
+      header: ({ column }) => <SortableHeader column={column} label="Tempo" />,
       cell: ({ getValue }) => {
         const value = getValue();
         return value ? (
@@ -243,7 +243,7 @@ export function PagesTable({
   return (
     <DataTable
       table={table}
-      empty={{ title: "No pages crawled" }}
+      empty={{ title: "Nenhuma página analisada" }}
       isFiltered={activeFilterCount > 0}
       onClearFilters={resetFilters}
       toolbar={
