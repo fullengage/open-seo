@@ -290,7 +290,21 @@ export function LeadEnrichmentModal({
                   {enr.items.map((it, i) => (
                     <tr key={i} className="border-t border-border/50">
                       <td className="py-1 pr-2 font-medium text-foreground/80 whitespace-nowrap">{it.campo}</td>
-                      <td className="py-1 pr-2 break-all">{it.valor}</td>
+                      <td className="py-1 pr-2 break-all">
+                        {it.valor.startsWith("http") ? (
+                          <a
+                            href={it.valor}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-primary underline hover:text-primary/80 inline-flex items-center gap-1 font-medium"
+                          >
+                            {it.valor}
+                            <ExternalLink className="h-2.5 w-2.5 inline shrink-0" />
+                          </a>
+                        ) : (
+                          it.valor
+                        )}
+                      </td>
                       <td className="py-1 text-muted-foreground whitespace-nowrap">{it.fonte}</td>
                     </tr>
                   ))}
@@ -520,10 +534,23 @@ export function LeadEnrichmentModal({
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-foreground flex items-center gap-1">
-                  <Linkedin className="h-3 w-3 text-primary" />
-                  LinkedIn Institucional
-                </label>
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-foreground flex items-center gap-1">
+                    <Linkedin className="h-3 w-3 text-primary" />
+                    LinkedIn Institucional
+                  </label>
+                  {linkedin ? (
+                    <a
+                      href={linkedin.startsWith("http") ? linkedin : `https://${linkedin}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-[11px] text-primary hover:underline inline-flex items-center gap-1 font-medium"
+                    >
+                      Abrir página
+                      <ExternalLink className="h-2.5 w-2.5 inline" />
+                    </a>
+                  ) : null}
+                </div>
                 <Input
                   value={linkedin}
                   onChange={(e) => setLinkedin(e.target.value)}

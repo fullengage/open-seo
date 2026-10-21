@@ -196,29 +196,223 @@ export function parseLinkedinCompany(r: Record<string, unknown> | null | undefin
   };
 }
 
-/** Página da empresa no LinkedIn via Bright Data (só empresa; nada de perfis de pessoas). */
-async function linkedinCompany(url: string): Promise<{ data: ReturnType<typeof parseLinkedinCompany>; skipped?: string }> {
-  const key = process.env.BRIGHTDATA_API_KEY;
-  if (!key) return { data: null, skipped: "Bright Data sem chave" };
+export interface LinkedinCompanyData {
+  nome: string | null;
+  seguidores: string | null;
+  funcionariosNoLinkedin: string | null;
+  porte: string | null;
+  setor: string | null;
+  sede: string | null;
+  fundada: string | null;
+  ultimaAtividade?: string | null;
+  ultimoPostTexto?: string | null;
+  ultimoPostLikes?: number | null;
+  ultimoPostUrl?: string | null;
+  ultimoPostDiasAtras?: number | null;
+}
+
+export async function fetchPublicLinkedinCompany(
+  url: string,
+): Promise<{ data: LinkedinCompanyData | null; skipped?: string }> {
   try {
-    // ponytail: sem contador de uso próprio; o plano grátis cobre 5.000 registros/mês — contar quando passar disso
-    const r = await fetch(
-      "https://api.brightdata.com/datasets/v3/scrape?dataset_id=gd_l1vikfnt1wgvvqz95w&format=json",
-      {
-        method: "POST",
-        headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-        body: JSON.stringify([{ url }]),
-        signal: AbortSignal.timeout(70_000),
+    const cleanUrl = url.trim().replace(/\/posts\/?$/, "").replace(/\/$/, "");
+    const res = await fetch(cleanUrl, {
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept-Language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7",
       },
-    );
-    if (r.status === 202) return { data: null, skipped: "LinkedIn demorou mais de 1 minuto; tente de novo" };
-    if (!r.ok) return { data: null, skipped: `Bright Data respondeu ${r.status}` };
-    const j = (await r.json()) as unknown;
-    const first = (Array.isArray(j) ? j[0] : j) as Record<string, unknown> | undefined;
-    return { data: parseLinkedinCompany(first) };
-  } catch {
-    return { data: null, skipped: "Bright Data não respondeu" };
+      signal: AbortSignal.timeout(15_000),
+    });
+
+    if (res.status === 404) return { data: null, skipped: "página não encontrada (404)" };
+    if (!res.ok) return { data: null, skipped: `LinkedIn respondeu ${res.status}` };
+
+    const html = await res.text();
+
+    // 1. Extração do JSON-LD Schema.org
+    const scripts = [...html.matchAll(/<script[^>]*type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/gi)];
+    let org: Record<string, any> | null = null;
+    const posts: Array<{ datePublished?: string; text?: string; userInteractionCount?: number; url?: string }> = [];
+
+    for (const s of scripts) {
+      try {
+        const parsed = JSON.parse(s[1]);
+        const list = Array.isArray(parsed) ? parsed : (parsed["@graph"] || [parsed]);
+        for (const item of list) {
+          if (item["@type"] === "Organization") org = item;
+          if (item["@type"] === "SocialMediaPosting") {
+            const likes = item.interactionStatistic?.userInteractionCount ?? null;
+            posts.push({
+              datePublished: item.datePublished,
+              text: item.text || item.headline,
+              userInteractionCount: typeof likes === "number" ? likes : undefined,
+              url: item.url || item.mainEntityOfPage,
+            });
+          }
+        }
+      } catch {
+        // ignore parse error
+      }
+    }
+
+    // 2. Seguidores do HTML
+    const fMatch = html.match(/([\d.,]+)\s+(?:seguidores|followers)/i);
+    const seguidores = fMatch ? fMatch[1] : null;
+
+    // 3. Ordenação e formatação do post mais recente
+    posts.sort((a, b) => new Date(b.datePublished || 0).getTime() - new Date(a.datePublished || 0).getTime());
+    const latest = posts[0];
+
+    let ultimaAtividade: string | null = null;
+    let ultimoPostTexto: string | null = null;
+    let ultimoPostLikes: number | null = null;
+    let ultimoPostUrl: string | null = null;
+    let ultimoPostDiasAtras: number | null = null;
+
+    if (latest?.datePublished) {
+      const pubDate = new Date(latest.datePublished);
+      const diffMs = Date.now() - pubDate.getTime();
+      const daysAgo = Math.max(0, Math.floor(diffMs / 864e5));
+      ultimoPostDiasAtras = daysAgo;
+
+      let timeLabel = "";
+      if (daysAgo === 0) timeLabel = "Hoje";
+      else if (daysAgo === 1) timeLabel = "Ontem";
+      else if (daysAgo < 7) timeLabel = `há ${daysAgo} dias`;
+      else if (daysAgo < 30) timeLabel = `há ${Math.floor(daysAgo / 7)} semana${Math.floor(daysAgo / 7) > 1 ? "s" : ""}`;
+      else if (daysAgo < 365) timeLabel = `há ${Math.floor(daysAgo / 30)} mês${Math.floor(daysAgo / 30) > 1 ? "es" : ""}`;
+      else timeLabel = `há mais de 1 ano`;
+
+      const dataPt = !isNaN(pubDate.getTime()) ? pubDate.toLocaleDateString("pt-BR") : "";
+
+      let statusFrequencia = "";
+      if (daysAgo <= 30) {
+        statusFrequencia = "Ativo frequentemente";
+      } else if (daysAgo <= 90) {
+        statusFrequencia = "Frequência moderada";
+      } else {
+        statusFrequencia = "Pouco ativo";
+      }
+
+      ultimaAtividade = `${statusFrequencia} (publicou ${timeLabel}${dataPt ? ` · ${dataPt}` : ""})`;
+
+      if (latest.text) {
+        const cleanText = latest.text.replace(/\s+/g, " ").trim();
+        ultimoPostTexto = cleanText.length > 140 ? `${cleanText.slice(0, 137)}...` : cleanText;
+      }
+      if (typeof latest.userInteractionCount === "number") {
+        ultimoPostLikes = latest.userInteractionCount;
+      }
+      if (latest.url) {
+        ultimoPostUrl = latest.url;
+      }
+    } else {
+      ultimaAtividade = "Sem postagens públicas recentes";
+    }
+
+    const empCount = org?.numberOfEmployees?.value || org?.numberOfEmployees;
+    const funcionarios = empCount ? String(empCount) : null;
+    const local = org?.address?.addressLocality
+      ? `${org.address.addressLocality}${org.address.addressRegion ? `, ${org.address.addressRegion}` : ""}`
+      : null;
+
+    return {
+      data: {
+        nome: org?.name || null,
+        seguidores,
+        funcionariosNoLinkedin: funcionarios,
+        porte: funcionarios,
+        setor: null,
+        sede: local,
+        fundada: null,
+        ultimaAtividade,
+        ultimoPostTexto,
+        ultimoPostLikes,
+        ultimoPostUrl,
+        ultimoPostDiasAtras,
+      },
+    };
+  } catch (err: any) {
+    return { data: null, skipped: `Falha ao carregar página do LinkedIn (${err?.message || "timeout"})` };
   }
+}
+
+async function searchCompanyLinkedin(name: string, domain?: string | null): Promise<string | null> {
+  const clean = (s: string) =>
+    s
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, "-")
+      .replace(/-+/g, "-")
+      .replace(/^-|-$/g, "");
+
+  const slugs = new Set<string>();
+  if (name) {
+    const raw = clean(name);
+    if (raw.length >= 3) slugs.add(raw);
+    const compact = raw.replace(/-/g, "");
+    if (compact.length >= 3) slugs.add(compact);
+    const trimmed = name.replace(/\b(ltda|me|eireli|s\/a|sa|epp|cia|comercio|industria|servicos)\b/gi, "").trim();
+    const cleanTrimmed = clean(trimmed);
+    if (cleanTrimmed.length >= 3) {
+      slugs.add(cleanTrimmed);
+      slugs.add(cleanTrimmed.replace(/-/g, ""));
+    }
+  }
+  if (domain) {
+    const host = domain.replace(/^https?:\/\//, "").replace(/^www\./, "").split("/")[0].split(".")[0];
+    const cleanHost = clean(host);
+    if (cleanHost.length >= 3) slugs.add(cleanHost);
+  }
+
+  for (const s of slugs) {
+    try {
+      const res = await fetch(`https://www.linkedin.com/company/${s}`, {
+        method: "HEAD",
+        headers: {
+          "User-Agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        },
+        signal: AbortSignal.timeout(4000),
+      });
+      if (res.ok) {
+        return `https://www.linkedin.com/company/${s}`;
+      }
+    } catch {
+      // continua próximo candidato
+    }
+  }
+
+  return null;
+}
+
+/** Página da empresa no LinkedIn (Bright Data se houver chave, senão coleta direta com posts via Schema.org). */
+async function linkedinCompany(url: string): Promise<{ data: ReturnType<typeof parseLinkedinCompany> & Partial<LinkedinCompanyData>; skipped?: string }> {
+  const key = process.env.BRIGHTDATA_API_KEY;
+  if (key) {
+    try {
+      const r = await fetch(
+        "https://api.brightdata.com/datasets/v3/scrape?dataset_id=gd_l1vikfnt1wgvvqz95w&format=json",
+        {
+          method: "POST",
+          headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+          body: JSON.stringify([{ url }]),
+          signal: AbortSignal.timeout(70_000),
+        },
+      );
+      if (r.ok) {
+        const j = (await r.json()) as unknown;
+        const first = (Array.isArray(j) ? j[0] : j) as Record<string, unknown> | undefined;
+        const d = parseLinkedinCompany(first);
+        if (d) return { data: d };
+      }
+    } catch {
+      // fallback para coleta pública
+    }
+  }
+  return fetchPublicLinkedinCompany(url) as any;
 }
 
 const norm = (s: string) =>
@@ -319,19 +513,37 @@ export const LeadEnrichmentService = {
       add("Facebook", d.facebook, "Links do site");
     }
 
-    // 3b. Página da empresa no LinkedIn (Bright Data)
+    // 3b. Página da empresa no LinkedIn e últimas atividades
     let linkedinSkipped: string | null = null;
-    const liUrl = patch.linkedin || lead.linkedin;
+    let liUrl = patch.linkedin || lead.linkedin;
+
+    // Se o site não tiver LinkedIn e o lead também não, procura automaticamente por candidatos
+    if (!liUrl && name) {
+      liUrl = await searchCompanyLinkedin(name, domain || (site ? new URL(site).hostname : null));
+      if (liUrl) {
+        patch.linkedin = liUrl;
+        add("LinkedIn da empresa", liUrl, "Varredura Digital");
+      }
+    }
+
     if (liUrl) {
       const li = await linkedinCompany(liUrl);
       linkedinSkipped = li.skipped || null;
       if (li.data) {
-        add("LinkedIn: funcionários", li.data.funcionariosNoLinkedin || li.data.porte, "LinkedIn (Bright Data)");
-        add("LinkedIn: setor", li.data.setor, "LinkedIn (Bright Data)");
-        add("LinkedIn: seguidores", li.data.seguidores, "LinkedIn (Bright Data)");
-        add("LinkedIn: sede", li.data.sede, "LinkedIn (Bright Data)");
-        add("LinkedIn: fundada em", li.data.fundada, "LinkedIn (Bright Data)");
+        if (!patch.linkedin) patch.linkedin = liUrl;
+        add("LinkedIn: seguidores", li.data.seguidores, "LinkedIn");
+        add("LinkedIn: funcionários", li.data.funcionariosNoLinkedin || li.data.porte, "LinkedIn");
+        add("LinkedIn: setor", li.data.setor, "LinkedIn");
+        add("LinkedIn: sede", li.data.sede, "LinkedIn");
+        add("LinkedIn: fundada em", li.data.fundada, "LinkedIn");
+        add("LinkedIn: última atividade", li.data.ultimaAtividade, "LinkedIn");
+        if (li.data.ultimoPostTexto) {
+          const likesInfo = li.data.ultimoPostLikes ? ` (${li.data.ultimoPostLikes} curtidas)` : "";
+          add("LinkedIn: último post", `"${li.data.ultimoPostTexto}"${likesInfo}`, "LinkedIn");
+        }
       }
+    } else {
+      add("LinkedIn da empresa", "Página oficial não localizada", "Varredura Digital");
     }
 
     // 4. Domínio (Registro.br) e e-mail (DNS)
@@ -403,7 +615,7 @@ export const LeadEnrichmentService = {
       add("Busca sugerida", ai.buscaSugerida, "Claude Haiku 5.5");
     }
 
-    if (linkedinSkipped) add("LinkedIn", `não consultado: ${linkedinSkipped}`, "Bright Data");
+    if (linkedinSkipped) add("LinkedIn", `aviso: ${linkedinSkipped}`, "LinkedIn");
     const enrichment: LeadEnrichment = { at: today(), items, ai, mapsSkipped: mapsSkipped || null };
     return {
       patch: {
