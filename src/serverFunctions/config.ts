@@ -5,6 +5,7 @@ import { requireAuthenticatedContext } from "@/serverFunctions/middleware";
 export const getSeoApiKeyStatus = createServerFn({ method: "GET" })
   .middleware(requireAuthenticatedContext)
   .handler(() => {
-    const configured = Boolean(env.DATAFORSEO_API_KEY?.trim());
+    // Fullweb: o sistema funciona sem DataForSEO (dados de busca vêm do Search Console); nada a configurar.
+    const configured = true as boolean;
     return { configured };
   });
