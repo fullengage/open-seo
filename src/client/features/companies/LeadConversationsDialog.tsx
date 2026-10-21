@@ -39,7 +39,7 @@ export function LeadConversationsDialog({ lead, onClose }: { lead: PipelineLead;
         </div>
 
         {!result && <p className="text-xs text-muted-foreground">Buscando no ChatHook…</p>}
-        {result && !result.ok && <p className="text-xs text-amber-600">{result.reason}</p>}
+        {result && !result.ok && <p className="text-xs text-[#8A6B3A]">{result.reason}</p>}
         {result?.ok && !result.contact && (
           <p className="text-xs text-muted-foreground">Nenhuma conversa com este lead no ChatHook ainda.</p>
         )}

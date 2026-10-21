@@ -225,16 +225,15 @@ export function CompaniesPage() {
   }
 
   return (
-    <div className="flex-1 space-y-6 p-6">
+    <div className="flex-1 space-y-5 p-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
             <Building2 className="h-6 w-6 text-primary" />
-            Inteligência B2B, SEO Local & Prospecção (Anti-Clay)
+            Prospecção B2B
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Mapeamento de empresas na Receita Federal (QSA), landing pages programáticas locais,
-            pipeline de leads e gerador de copy de abordagem de vendas.
+            Empresas da Receita Federal, diagnóstico medido e abordagem aprovada por você.
           </p>
         </div>
       </div>
@@ -386,7 +385,7 @@ export function CompaniesPage() {
                         className="gap-1.5"
                       >
                         <Sparkles className="h-4 w-4 text-primary" />
-                        Gerar Abordagem (Anti-Clay)
+                        Gerar Abordagem
                       </Button>
 
                       <Button
@@ -490,7 +489,7 @@ export function CompaniesPage() {
                             </p>
                             {/* Alerta de e-mail suspeito (Item 11) */}
                             {checkEmailWarning(company.email).isSuspicious && (
-                              <p className="text-xs text-amber-600 dark:text-amber-400 font-medium mt-0.5">
+                              <p className="text-xs text-[#8A6B3A] dark:text-[#B08D57] font-medium mt-0.5">
                                 ⚠️ {checkEmailWarning(company.email).reason}
                               </p>
                             )}
@@ -751,7 +750,7 @@ export function CompaniesPage() {
                               {/* Alerta de e-mail suspeito (Item 11) */}
                               {emailWarning.isSuspicious && (
                                 <span
-                                  className="text-[10px] bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20 px-1 rounded ml-1"
+                                  className="text-[10px] bg-[#B08D57]/10 text-[#8A6B3A] dark:text-[#B08D57] border border-[#B08D57]/20 px-1 rounded ml-1"
                                   title={emailWarning.reason}
                                 >
                                   ⚠️ E-mail Terceiro / Confirmar

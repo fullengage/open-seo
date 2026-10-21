@@ -285,11 +285,11 @@ export function OutreachCopyDialog({
 
         {/* CASO 1: Bloqueio por Falta de Decisor (Regra: Escolha obrigatória do sócio do QSA) */}
         {!lead.naoContatar && !hasDecisor && (
-          <div className="space-y-4 p-4 bg-amber-500/10 border border-amber-500/30 rounded-lg animate-in fade-in-50">
+          <div className="space-y-4 p-4 bg-[#B08D57]/10 border border-[#B08D57]/30 rounded-lg animate-in fade-in-50">
             <div className="flex items-start gap-3">
-              <AlertTriangle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+              <AlertTriangle className="h-5 w-5 text-[#B08D57] shrink-0 mt-0.5" />
               <div className="space-y-1">
-                <h4 className="text-xs font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider">
+                <h4 className="text-xs font-bold text-[#8A6B3A] dark:text-[#B08D57] uppercase tracking-wider">
                   Decisor obrigatório para gerar abordagem
                 </h4>
                 <p className="text-xs text-muted-foreground leading-relaxed">
@@ -401,7 +401,7 @@ export function OutreachCopyDialog({
                   className={
                     currentDraft.status === "approved"
                       ? "border-emerald-500 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px]"
-                      : "border-amber-500 bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[10px]"
+                      : "border-[#B08D57] bg-[#B08D57]/10 text-[#8A6B3A] dark:text-[#B08D57] text-[10px]"
                   }
                 >
                   {currentDraft.status === "approved" ? "✓ Aprovado para Envio" : "⏳ Aguardando Aprovação"}

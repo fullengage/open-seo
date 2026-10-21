@@ -82,7 +82,7 @@ export function WeeklyReport({ leads }: { leads: PipelineLead[] }) {
           {replies && replies.length > 0 && (
             <p className="text-xs text-muted-foreground">Responderam: {replies.map((r) => name(r.id)).join(", ")}</p>
           )}
-          {note && <p className="text-xs text-amber-600">{note}</p>}
+          {note && <p className="text-xs text-[#8A6B3A]">{note}</p>}
         </div>
       )}
     </>
