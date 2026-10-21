@@ -27,7 +27,7 @@ const projectNavItems = [
   },
   {
     to: "/p/$projectId/keywords" as const,
-    label: "Pesquisa de Palavras-chave",
+    label: "Palavras-chave",
     icon: Search,
   },
   {
@@ -37,12 +37,12 @@ const projectNavItems = [
   },
   {
     to: "/p/$projectId/rank-tracking" as const,
-    label: "Monitor de Posições (Rank)",
+    label: "Monitor de Posições",
     icon: TrendingUp,
   },
   {
     to: "/p/$projectId/search-performance" as const,
-    label: "Desempenho no Google (GSC)",
+    label: "Desempenho no Google",
     icon: GoogleGlyphMuted,
   },
   {
@@ -57,7 +57,7 @@ const projectNavItems = [
   },
   {
     to: "/p/$projectId/audit" as const,
-    label: "Auditoria Técnica de SEO",
+    label: "Auditoria Técnica",
     icon: ClipboardCheck,
   },
   {
@@ -98,7 +98,7 @@ const aiNavItem = linkOptions({
 
 export const companiesNavItem = linkOptions({
   to: "/companies" as const,
-  label: "Prospecção B2B (Funil)",
+  label: "Prospecção B2B",
   icon: Building2,
 });
 
@@ -126,36 +126,23 @@ export function getProjectNavGroups(projectId: string) {
   const byPath = (path: (typeof projectNavItems)[number]["to"]) =>
     all.find((i) => i.to === path)!;
 
+  // Fullweb: só o que funciona sem DataForSEO (domínio, backlinks e prompts de IA saíram do menu)
   return [
     {
-      label: "Visão Geral",
-      items: [byPath("/p/$projectId")],
-    },
-    {
-      label: "Pesquisa & Mercado",
+      label: "Inteligência Comercial",
       items: [
-        byPath("/p/$projectId/keywords"),
-        byPath("/p/$projectId/domain"),
-        byPath("/p/$projectId/backlinks"),
-      ],
-    },
-    {
-      label: "Meu Site & SEO",
-      items: [
+        byPath("/p/$projectId"),
+        companiesNavItem,
         byPath("/p/$projectId/search-performance"),
         byPath("/p/$projectId/rank-tracking"),
-        byPath("/p/$projectId/saved"),
         byPath("/p/$projectId/audit"),
+        byPath("/p/$projectId/keywords"),
+        byPath("/p/$projectId/reports"),
       ],
     },
     {
-      label: "Prospecção & Relatórios",
-      items: [
-        companiesNavItem,
-        byPath("/p/$projectId/reports"),
-        byPath("/p/$projectId/context"),
-        aiNavItem,
-      ],
+      label: "Ferramentas",
+      items: [byPath("/p/$projectId/context"), aiNavItem],
     },
   ];
 }

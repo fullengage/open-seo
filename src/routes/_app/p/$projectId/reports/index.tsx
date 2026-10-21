@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { PageHeader } from "@/client/components/PageHeader";
+import { RelatorioComercial } from "@/client/features/fullweb/RelatorioComercial";
 import { Button } from "@/client/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
@@ -41,7 +42,7 @@ function ReportsPage() {
       <div className="mx-auto max-w-7xl space-y-4">
         <PageHeader
           title="Relatórios"
-          description="Relatórios de SEO gerados e salvos neste projeto."
+          description="Relatórios com dados reais. Os relatórios de SEO escritos pelos agentes ficam logo abaixo."
           actions={
             <Button
               variant="ghost"
@@ -53,11 +54,13 @@ function ReportsPage() {
                 />
               }
             >
-              Modelos de Relatório
+              Configurar relatórios
             </Button>
           }
         />
 
+        <RelatorioComercial />
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground pt-2">Relatórios de SEO salvos</h2>
         <QueryState query={reportsQuery} errorFallback="Falha ao carregar relatórios">
           {(data) => (
             <ReportsList

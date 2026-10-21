@@ -3,7 +3,8 @@ export type PipelineStage =
   | "audit_ready"
   | "outreach_sent"
   | "negotiation"
-  | "won";
+  | "won"
+  | "lost";
 
 export type LeadTemperature = "cold" | "warm" | "hot";
 

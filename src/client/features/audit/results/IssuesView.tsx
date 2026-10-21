@@ -4,6 +4,7 @@ import { sort } from "remeda";
 import {
   getIssueDescriptor,
   ISSUE_SEVERITY_ORDER,
+  SEVERITY_LABEL,
   type IssueSeverity,
 } from "@/shared/audit-issues";
 import type { AuditResultsData } from "@/client/features/audit/results/types";
@@ -19,12 +20,6 @@ const SEVERITY_RULE: Record<IssueSeverity, string> = {
   critical: "border-l-destructive/60",
   warning: "border-l-warning/60",
   info: "border-l-info/60",
-};
-
-const SEVERITY_LABEL: Record<IssueSeverity, string> = {
-  critical: "Critical",
-  warning: "Warning",
-  info: "Info",
 };
 
 interface IssueGroup {
@@ -114,8 +109,8 @@ export function IssuesView({
       {issues.length === 0 && resolvedIssues.length === 0 ? (
         <EmptyState
           variant="plain"
-          title="No issues recorded for this audit."
-          description="Either the site is in great shape, or this audit ran before issue checks existed — run a new audit to get the full report."
+          title="Nenhum problema registrado nesta auditoria."
+          description="Ou o site está em boa forma, ou esta auditoria é antiga e não tinha essas verificações. Rode uma nova auditoria para ver o relatório completo."
         />
       ) : (
         <div>
@@ -219,9 +214,12 @@ function IssueSection({
     <div className="border-t border-border first:border-t-0">
       <div className="flex items-center gap-2 bg-muted/50 px-4 py-1.5 border-b border-border">
         <SeverityBadge severity={section.severity}>
-          {SEVERITY_LABEL[section.severity]}
+          {SEVERITY_LABEL[section.severity].label}
           <span className="tabular-nums">{issueCount}</span>
         </SeverityBadge>
+        <span className="text-xs text-muted-foreground truncate">
+          {SEVERITY_LABEL[section.severity].criterio}
+        </span>
       </div>
       <div className="divide-y divide-border">
         {section.groups.map((group) => (
@@ -272,7 +270,7 @@ function IssueRow({
           )}
         </span>
         <span className="text-xs tabular-nums text-muted-foreground shrink-0">
-          {group.issues.length} {group.issues.length === 1 ? "page" : "pages"}
+          {group.issues.length} {group.issues.length === 1 ? "página" : "páginas"}
         </span>
         <ChevronRight
           className={`size-4 shrink-0 text-muted-foreground transition-transform ${
@@ -283,17 +281,33 @@ function IssueRow({
 
       {open && (
         <div className="pl-4 pr-4 pb-4 pt-0.5 space-y-3">
+          <p className="text-sm max-w-prose">
+            <span className="font-medium">O que encontramos: </span>
+            <span className="text-foreground/80">
+              {group.issues.length} {group.issues.length === 1 ? "página" : "páginas"} com
+              "{group.title.toLowerCase()}".
+            </span>
+          </p>
           {group.explanation && (
-            <p className="text-sm text-muted-foreground max-w-prose">
-              {group.explanation}
+            <p className="text-sm max-w-prose">
+              <span className="font-medium">Por que isso importa: </span>
+              <span className="text-foreground/80">{group.explanation}</span>
             </p>
           )}
           {group.howToFix && (
             <p className="text-sm max-w-prose">
-              <span className="font-medium">How to fix: </span>
+              <span className="font-medium">Como corrigir: </span>
               <span className="text-foreground/80">{group.howToFix}</span>
             </p>
           )}
+          <p className="text-sm max-w-prose">
+            <span className="font-medium">Prioridade: </span>
+            <span className="text-foreground/80">
+              {SEVERITY_LABEL[group.severity].label.replace("Prioridade ", "")} —{" "}
+              {SEVERITY_LABEL[group.severity].criterio}
+            </span>
+          </p>
+          <p className="text-sm font-medium">Onde está:</p>
           <AffectedUrlList issues={group.issues} newIssueKeys={newIssueKeys} />
         </div>
       )}
@@ -344,7 +358,7 @@ function AffectedUrlList({
       })}
       {remaining > 0 && (
         <div className="px-3 py-2 text-xs text-muted-foreground">
-          …and {remaining} more — export the issues CSV for the full list.
+          …e mais {remaining}. Exporte a planilha (CSV) para ver a lista completa.
         </div>
       )}
     </div>

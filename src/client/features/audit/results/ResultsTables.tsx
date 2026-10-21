@@ -89,7 +89,7 @@ export function PerformanceTable({
   return (
     <DataTable
       table={table}
-      empty={{ title: "No Lighthouse results" }}
+      empty={{ title: "Nenhum teste de velocidade" }}
       isFiltered={activeFilterCount > 0}
       onClearFilters={resetFilters}
       toolbar={
@@ -133,18 +133,18 @@ function buildPerformanceColumns({
       meta: { cellClassName: "max-w-[180px] truncate" },
     }),
     performanceColumnHelper.accessor("strategy", {
-      header: ({ column }) => <SortableHeader column={column} label="Device" />,
+      header: ({ column }) => <SortableHeader column={column} label="Aparelho" />,
       cell: ({ getValue }) => (
         <span className="capitalize text-xs">{getValue()}</span>
       ),
     }),
     performanceColumnHelper.display({
       id: "status",
-      header: ({ column }) => <SortableHeader column={column} label="Status" />,
+      header: ({ column }) => <SortableHeader column={column} label="Situação" />,
       cell: ({ row }) => {
         const isFailed = isLighthouseFailure(row.original);
         const failureMessage =
-          row.original.errorMessage ?? "Lighthouse returned no category scores";
+          row.original.errorMessage ?? "O teste de velocidade não retornou notas";
         return isFailed ? (
           <Badge variant="destructive" title={failureMessage}>
             failed
@@ -159,7 +159,7 @@ function buildPerformanceColumns({
         Number(isLighthouseFailure(right.original)),
     }),
     performanceColumnHelper.accessor("performanceScore", {
-      header: ({ column }) => <SortableHeader column={column} label="Perf" />,
+      header: ({ column }) => <SortableHeader column={column} label="Velocidade" />,
       cell: ({ getValue }) => <LighthouseScoreBadge score={getValue()} />,
       sortingFn: nullableNumberSort,
     }),
@@ -223,7 +223,7 @@ function buildPerformanceColumns({
     }),
     performanceColumnHelper.display({
       id: "issues",
-      header: () => "Issues",
+      header: () => "Problemas",
       cell: ({ row }) =>
         row.original.r2Key && !isLighthouseFailure(row.original) ? (
           <Button

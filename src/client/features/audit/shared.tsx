@@ -61,7 +61,7 @@ export function StatusBadge({ status }: { status: string }) {
   if (status === "running") {
     return (
       <Badge variant="info">
-        <Spinner /> Running
+        <Spinner /> Em andamento
       </Badge>
     );
   }
@@ -69,14 +69,14 @@ export function StatusBadge({ status }: { status: string }) {
   if (status === "completed") {
     return (
       <Badge variant="success">
-        <CheckCircle /> Done
+        <CheckCircle /> Concluída
       </Badge>
     );
   }
 
   return (
     <Badge variant="destructive">
-      <AlertCircle /> Failed
+      <AlertCircle /> Falhou
     </Badge>
   );
 }
@@ -197,7 +197,7 @@ export function BotProtectionAdvice({
   }
   return (
     <>
-      {rendered ? "Rendering couldn't get past it. " : null}
+      {rendered ? "Nem carregando a página no navegador conseguimos passar. " : null}
       Try a free desktop crawler like {desktopCrawlers}.
     </>
   );

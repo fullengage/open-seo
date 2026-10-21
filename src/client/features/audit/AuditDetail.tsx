@@ -83,9 +83,9 @@ export function AuditDetail({
     return (
       <div className="px-4 py-4 md:px-6 md:py-6">
         <div className="mx-auto max-w-7xl space-y-4">
-          <BackButton onClick={onBack}>All audits</BackButton>
+          <BackButton onClick={onBack}>Todas as auditorias</BackButton>
           <QueryError
-            fallback="We could not load this audit. It may have been deleted."
+            fallback="Não conseguimos abrir esta auditoria. Ela pode ter sido apagada."
             onRetry={() => void statusQuery.refetch()}
             isRetrying={statusQuery.isFetching}
           />
@@ -119,7 +119,7 @@ export function AuditDetail({
     <div className="px-4 py-4 md:px-6 md:py-6 pb-24 md:pb-8 overflow-auto">
       <div className="mx-auto max-w-7xl space-y-4">
         <div className="space-y-3">
-          <BackButton onClick={onBack}>All audits</BackButton>
+          <BackButton onClick={onBack}>Todas as auditorias</BackButton>
           <div className="space-y-1">
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
               <h1 className="text-2xl font-semibold tracking-tight">
@@ -194,7 +194,7 @@ export function AuditDetail({
         {(isComplete || isFailed) && (
           <QueryState
             query={resultsQuery}
-            errorFallback="Failed to load the audit results"
+            errorFallback="Não foi possível carregar o resultado da auditoria"
           >
             {(data) =>
               (isComplete || failedWithResults) && (
@@ -242,14 +242,14 @@ function ProgressCard({
   const isLighthousePhase = status.currentPhase === "lighthouse";
   const phaseLabel =
     status.currentPhase === "discovery"
-      ? "Discovery"
+      ? "Descobrindo páginas"
       : status.currentPhase === "crawling"
-        ? "Crawling"
+        ? "Lendo páginas"
         : status.currentPhase === "lighthouse"
-          ? "Lighthouse"
+          ? "Testando velocidade"
           : status.currentPhase === "finalizing"
-            ? "Finalizing"
-            : "Running";
+            ? "Finalizando"
+            : "Em andamento";
   const progress = isLighthousePhase ? lighthouseProgress : crawlProgress;
 
   const crawlProgressQuery = useQuery({
@@ -266,7 +266,7 @@ function ProgressCard({
         <CardHeader>
           <CardTitle className="flex items-center gap-2 font-medium">
             <Spinner className="text-primary" aria-hidden />
-            {isLighthousePhase ? "Running Lighthouse checks" : "Crawling pages"}
+            {isLighthousePhase ? "Testando a velocidade das páginas" : "Lendo as páginas do site"}
           </CardTitle>
           <CardAction>
             <Badge variant="secondary">{phaseLabel}</Badge>

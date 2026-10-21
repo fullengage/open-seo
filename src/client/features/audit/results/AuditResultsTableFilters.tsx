@@ -33,13 +33,13 @@ export function PagesFilterBar({
     <DataTableFilterPanel activeCount={activeFilterCount} onReset={onReset}>
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-4">
         <TextFilter
-          label="Search"
+          label="Buscar"
           value={filters.query}
           placeholder="URL, title, meta"
           onChange={(query) => onChange({ ...filters, query })}
         />
         <SelectFilter
-          label="Status"
+          label="Situação"
           value={filters.status}
           onChange={(status) => onChange({ ...filters, status })}
           options={[
@@ -47,42 +47,42 @@ export function PagesFilterBar({
             ["ok", "2xx"],
             ["redirect", "3xx"],
             ["error", "4xx/5xx"],
-            ["missing", "Missing"],
+            ["missing", "Ausente"],
           ]}
         />
         <SelectFilter
-          label="Crawl result"
+          label="Resultado da leitura"
           value={filters.fetchClass}
           onChange={(fetchClass) => onChange({ ...filters, fetchClass })}
           options={[
             ["all", "All"],
-            ["ok", "Read"],
-            ["error", "Failed"],
-            ["blocked", "Blocked"],
-            ["rate_limited", "Rate limited"],
+            ["ok", "Lida"],
+            ["error", "Falhou"],
+            ["blocked", "Bloqueada"],
+            ["rate_limited", "Limitada pelo site"],
           ]}
         />
         <SelectFilter
-          label="Alt text"
+          label="Texto alternativo"
           value={filters.missingAlt}
           onChange={(missingAlt) => onChange({ ...filters, missingAlt })}
           options={[
             ["all", "All"],
-            ["yes", "Missing alt"],
-            ["no", "No missing alt"],
+            ["yes", "Sem texto alternativo"],
+            ["no", "Com texto alternativo"],
           ]}
         />
       </div>
       <div className="grid grid-cols-1 gap-2 lg:grid-cols-2">
         <RangeFilter
-          label="Words"
+          label="Palavras"
           min={filters.minWords}
           max={filters.maxWords}
           onMinChange={(minWords) => onChange({ ...filters, minWords })}
           onMaxChange={(maxWords) => onChange({ ...filters, maxWords })}
         />
         <RangeFilter
-          label="Speed ms"
+          label="Tempo (ms)"
           min={filters.minResponseMs}
           max={filters.maxResponseMs}
           onMinChange={(minResponseMs) =>
@@ -112,33 +112,33 @@ export function PerformanceFilterBar({
     <DataTableFilterPanel activeCount={activeFilterCount} onReset={onReset}>
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-4">
         <TextFilter
-          label="Search"
+          label="Buscar"
           value={filters.query}
           placeholder="URL"
           onChange={(query) => onChange({ ...filters, query })}
         />
         <SelectFilter
-          label="Device"
+          label="Aparelho"
           value={filters.device}
           onChange={(device) => onChange({ ...filters, device })}
           options={[
             ["all", "All"],
             ["desktop", "Desktop"],
-            ["mobile", "Mobile"],
+            ["mobile", "Celular"],
           ]}
         />
         <SelectFilter
-          label="Status"
+          label="Situação"
           value={filters.status}
           onChange={(status) => onChange({ ...filters, status })}
           options={[
             ["all", "All"],
             ["ok", "OK"],
-            ["failed", "Failed"],
+            ["failed", "Falhou"],
           ]}
         />
         <TextFilter
-          label="Max LCP s"
+          label="Carregamento máx. (s)"
           value={filters.maxLcpSeconds}
           placeholder="2.5"
           type="number"
@@ -147,7 +147,7 @@ export function PerformanceFilterBar({
       </div>
       <div className="grid grid-cols-1 gap-2 lg:grid-cols-2">
         <RangeFilter
-          label="Perf"
+          label="Velocidade"
           min={filters.minPerf}
           max={filters.maxPerf}
           onMinChange={(minPerf) => onChange({ ...filters, minPerf })}

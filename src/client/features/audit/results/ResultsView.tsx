@@ -120,15 +120,15 @@ export function ResultsView({
           <ShieldAlert />
           <AlertTitle>
             {crawlStopped
-              ? "The crawl stopped early because of the site’s rate limit."
-              : `The site rate limited us on ${rateLimitedCount} ${rateLimitedCount === 1 ? "page" : "pages"}.`}
+              ? "A análise parou antes do fim por causa do limite de acessos do site."
+              : `O site limitou nossos acessos em ${rateLimitedCount} ${rateLimitedCount === 1 ? "página" : "páginas"}.`}
           </AlertTitle>
           <AlertDescription>
             {crawlStopped
-              ? "The requested cooldown exceeded the audit time limit, so some URLs were left unvisited. This report is incomplete. "
-              : "Pages that returned 429 Too Many Requests could not be audited. "}
-            Re-run the audit after the rate limit resets, or ask the site owner
-            to allow the "OpenSEO-Audit" crawler.
+              ? "O tempo de espera pedido pelo site passou do limite da auditoria, então algumas páginas ficaram sem análise. Este relatório está incompleto. "
+              : "Páginas que responderam \"muitas requisições\" (429) não puderam ser analisadas. "}
+            Rode a auditoria de novo mais tarde ou peça a quem cuida do site para
+            liberar o robô "OpenSEO-Audit".
           </AlertDescription>
         </Alert>
       )}
@@ -260,13 +260,13 @@ function ResultsHeader({
   onExport: (format: "csv" | "json" | "sheets") => void;
 }) {
   const tabs: Array<{ tab: ResultsTab; label: string }> = [
-    { tab: "issues", label: `Issues (${issueCount})` },
-    { tab: "pages", label: `Pages (${pageCount})` },
+    { tab: "issues", label: `Problemas identificados (${issueCount})` },
+    { tab: "pages", label: `Páginas analisadas (${pageCount})` },
     ...(hasPerformanceTab
       ? [
           {
             tab: "performance" as const,
-            label: `Performance (${lighthouseCount})`,
+            label: `Velocidade (${lighthouseCount})`,
           },
         ]
       : []),
@@ -326,9 +326,9 @@ function StatsStrip({
   }, [issues]);
 
   const items: StatItem[] = [
-    { label: "Pages crawled", value: String(pagesCrawled) },
+    { label: "Páginas analisadas", value: String(pagesCrawled) },
     {
-      label: "Issues found",
+      label: "Problemas identificados",
       value: String(issues.length),
       valueClass: issues.length === 0 ? "text-success" : "",
       sub: issues.length > 0 && (
@@ -341,10 +341,10 @@ function StatsStrip({
                 title={severity}
               >
                 {severity === "critical"
-                  ? "Critical"
+                  ? "Alta"
                   : severity === "warning"
-                    ? "Warning"
-                    : "Info"}{" "}
+                    ? "Média"
+                    : "Baixa"}{" "}
                 {severityCounts[severity]}
               </SeverityBadge>
             ) : null,
@@ -352,14 +352,14 @@ function StatsStrip({
         </span>
       ),
     },
-    { label: "Average response time", value: `${averageResponseMs}ms` },
+    { label: "Tempo médio de resposta", value: `${averageResponseMs}ms` },
   ];
 
   if (totalLighthouse > 0) {
     items.push(
-      { label: "Lighthouse tests", value: String(totalLighthouse) },
+      { label: "Testes de velocidade (Lighthouse)", value: String(totalLighthouse) },
       {
-        label: "Lighthouse performance",
+        label: "Nota de velocidade",
         value:
           lighthouseSummary.avgPerformance == null
             ? "-"
@@ -367,7 +367,7 @@ function StatsStrip({
         valueClass: scoreClass(lighthouseSummary.avgPerformance),
       },
       {
-        label: "Lighthouse SEO",
+        label: "Nota de SEO",
         value:
           lighthouseSummary.avgSeo == null
             ? "-"
@@ -375,7 +375,7 @@ function StatsStrip({
         valueClass: scoreClass(lighthouseSummary.avgSeo),
       },
       {
-        label: "Lighthouse accessibility",
+        label: "Nota de acessibilidade",
         value:
           lighthouseSummary.avgAccessibility == null
             ? "-"
@@ -383,7 +383,7 @@ function StatsStrip({
         valueClass: scoreClass(lighthouseSummary.avgAccessibility),
       },
       {
-        label: "Lighthouse failures",
+        label: "Testes que falharam",
         value: String(lighthouseSummary.failed),
         valueClass:
           lighthouseSummary.failed > 0 ? "text-destructive" : "text-success",

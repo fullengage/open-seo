@@ -56,6 +56,7 @@ const COLUMNS: { id: PipelineStage; label: string; color: string }[] = [
   { id: "outreach_sent", label: "Abordagem Enviada", color: "border-t-[#8C2430]" },
   { id: "negotiation", label: "Em Negociação", color: "border-t-[#5A0F1B]" },
   { id: "won", label: "Contrato Fechado", color: "border-t-[#2B2426]" },
+  { id: "lost", label: "Perdido", color: "border-t-[#9A8F92]" },
 ];
 
 export function LeadsKanban() {
@@ -143,6 +144,7 @@ export function LeadsKanban() {
       "outreach_sent",
       "negotiation",
       "won",
+      "lost",
     ];
 
     const currentLead = leads.find((l) => l.id === id);
@@ -332,7 +334,7 @@ export function LeadsKanban() {
           </div>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-6 gap-4">
           {COLUMNS.map((col) => {
             const colLeads = leads.filter((l) => l.stage === col.id);
 
@@ -654,7 +656,7 @@ export function LeadsKanban() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              disabled={col.id === "won"}
+                              disabled={col.id === "lost"}
                               className="h-5 w-5 p-0 text-primary"
                               onClick={(e) => handleMove(lead.id, "next", e)}
                               title="Avançar próxima etapa"

@@ -47,7 +47,7 @@ export const deletePipelineLead = createServerFn({ method: "POST" })
 
 const updatePipelineLeadStageInputSchema = z.object({
   id: z.string(),
-  stage: z.enum(["prospect", "audit_ready", "outreach_sent", "negotiation", "won"]),
+  stage: z.enum(["prospect", "audit_ready", "outreach_sent", "negotiation", "won", "lost"]),
 });
 
 export const updatePipelineLeadStage = createServerFn({ method: "POST" })
