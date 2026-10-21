@@ -62,11 +62,8 @@ export function AuthenticatedAppLayout({
   // (a first visit to a page without a project in the URL).
   const sidebarProjectPending =
     sidebarProjectId === null && projectsQuery.isPending;
-  // The setup guide is where the modal and banners send the user, so it shows
-  // neither: a banner there would link to the page the user is already on.
-  const shouldCheckSeoApiKeyStatus =
-    location.pathname !== BILLING_ROUTE &&
-    location.pathname !== dataforseoHelpLinkOptions.to;
+  // DataForSEO key is not needed in autonomous zero-cost mode (uses free Google APIs & local data).
+  const shouldCheckSeoApiKeyStatus = false;
   const seoApiKeyStatusQuery = useQuery({
     queryKey: ["seoApiKeyStatus"],
     queryFn: () => getSeoApiKeyStatus(),

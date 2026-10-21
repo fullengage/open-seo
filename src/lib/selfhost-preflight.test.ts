@@ -20,6 +20,15 @@ describe("runSelfhostPreflight", () => {
     expect(itemFor(result, "DATAFORSEO_API_KEY")?.level).toBe("ok");
   });
 
+  it("treats missing DataForSEO key as info (not needed) in autonomous mode", () => {
+    const result = runSelfhostPreflight({
+      AUTH_MODE: "local_noauth",
+    });
+
+    expect(result.failed).toBe(false);
+    expect(itemFor(result, "DATAFORSEO_API_KEY")?.level).toBe("info");
+  });
+
   it("fails an invalid AUTH_MODE with the valid list", () => {
     const result = runSelfhostPreflight({ AUTH_MODE: "local-noauth" });
 

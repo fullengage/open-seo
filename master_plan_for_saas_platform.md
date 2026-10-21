@@ -51,3 +51,34 @@
 - [x] Validar desempenho e segurança com testes automatizados (Testes vitest passando, `types:check` aprovado e verificação em produção)
 - [x] **Sistema de Cotas e Monitor de Custo Zero:**
   - Módulo `QuotasCard` integrado monitorando os limites gratuitos da Google PageSpeed API (25k req/dia), Crawler ilimitado e base de CNPJ.
+  - [x] tradução para pt_br
+
+  Refiz o relatório nesse formato: QA-OpenSEO-funil-2026-10-19.md. Resumo de cada item:
+
+#	Problema	Solução	Esforço
+1	Abre sem login	Bloqueio no servidor com nível de acesso; /mcp só com token; senha em variável de ambiente, com hash; trocar a senha do Postgres	Grande (você está fazendo)
+2	Pipeline só no navegador	Tabela pipeline_leads no Postgres que já existe, por organização, mais um botão “Importar leads deste navegador”	1 dia
+3	Abordagem inventa dados	Frases só a partir de fatos medidos, com mínimo de 2, e a IA só reescreve (ver a SPEC)	1 dia
+4	Decisor = primeiro sócio	Usar o decisor do card; se estiver vazio, você escolhe na lista de sócios	Horas
+5	Card de exemplo inventado	Remover o card de exemplo; o Kanban começa vazio	Horas
+6	Só 15 resultados	Paginação e total no topo	Horas
+7	Sem filtro de cidade e porte	A base já tem municipio, porte e matriz: criar os 3 filtros, com atalho “Alto Tietê”	Horas
+8	Filial no lugar da matriz	Filtro “só matriz”, ligado por padrão	Horas
+9	Recuperação judicial sem aviso	Selo vermelho e fora do funil por padrão	Horas
+10	Sem situação cadastral	Reimportar a base com a coluna de situação e mostrar só as ativas	1 dia
+11	E-mail de contador ou setor errado	Alerta quando o domínio é de terceiro ou o endereço é contab/legal/financeiro	Horas
+12	Assina “OpenSEO”	Marca e remetente vindos da configuração (Fullweb / Richard Wagner)	Horas
+13	Sem descadastro	Linha fixa no e-mail e campo “não contatar” no lead	Horas
+14	Diagnóstico sem link público	Auditoria, relatório e link /s/<token>, ligado depois do login; o card registra quando o lead abre	1 dia
+15	Bloco de custo aparece para todos	Mover para uma página só do admin	Horas
+
+Ordem sugerida:
+
+Login (item 1).
+Pipeline no banco (item 2).
+Os ajustes rápidos: itens 5, 4, 12 e 13.
+Abordagem com fatos medidos (item 3).
+Filtros e alertas da lista: itens 7, 9, 11 e 6.
+Link público do diagnóstico (item 14).
+Reimportação da base (item 10).
+Bloco de custo só para o admin (item 15).
