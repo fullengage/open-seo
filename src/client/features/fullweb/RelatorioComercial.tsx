@@ -27,6 +27,8 @@ export function funnel(leads: PipelineLead[], sinceMs?: number) {
   ).length;
   const pendingApproval = leads.filter((l) => l.draft && l.draft.status !== "approved").length;
   const won = count("won"), lost = count("lost");
+  const movedIn = (s: PipelineStage) =>
+    sinceMs ? leads.filter((l) => l.stage === s && l.stageChangedAt && Date.parse(l.stageChangedAt) >= sinceMs).length : null;
   return {
     total: leads.length,
     created: inPeriod.length,
@@ -34,6 +36,8 @@ export function funnel(leads: PipelineLead[], sinceMs?: number) {
     open: leads.filter((l) => !["won", "lost"].includes(l.stage)).length,
     won,
     lost,
+    wonInPeriod: movedIn("won"),
+    lostInPeriod: movedIn("lost"),
     approved,
     pendingApproval,
     // ponytail: taxa sobre negócios encerrados; sem data de mudança de etapa, é a taxa acumulada
@@ -80,10 +84,11 @@ export function RelatorioComercial() {
         </p>
       ) : (
         <>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
             <Kpi label={`Leads captados (${days} dias)`} value={f.created} />
             <Kpi label={`Abordagens aprovadas (${days} dias)`} value={f.approved} />
             <Kpi label="Oportunidades em andamento" value={f.open} />
+            <Kpi label={`Ganhos / perdidos (${days} dias)`} value={`${f.wonInPeriod ?? 0} / ${f.lostInPeriod ?? 0}`} hint="Leads que entraram em Ganho ou Perdido no período" />
             <Kpi label="Taxa de ganho" value={f.winRate === null ? "—" : `${f.winRate}%`} hint={f.winRate === null ? "Aparece com 3 ou mais negócios encerrados" : "Ganhos sobre ganhos + perdidos"} />
           </div>
           <div>
@@ -106,8 +111,8 @@ export function RelatorioComercial() {
             {f.pendingApproval > 0 && ` ${f.pendingApproval} ${f.pendingApproval === 1 ? "abordagem espera" : "abordagens esperam"} sua aprovação.`}
           </p>
           <p className="text-xs text-muted-foreground">
-            Ganhos, perdidos e etapas mostram a situação atual do funil; o sistema ainda não registra a data em que cada
-            lead mudou de etapa.
+            "Funil hoje" mostra a situação atual. Ganhos e perdidos no período contam a partir de 21/10/2026, quando o
+            sistema passou a registrar a data de cada mudança de etapa.
           </p>
         </>
       )}

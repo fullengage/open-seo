@@ -163,7 +163,9 @@ export const PipelineLeadService = {
     return withSql("updateStage", false, async (sql) => {
       await sql`
         UPDATE pipeline_leads
-        SET etapa = ${stage}, atualizado_em = NOW()
+        SET etapa = ${stage}, atualizado_em = NOW(),
+          dados = to_jsonb((COALESCE((dados #>> '{}')::jsonb, '{}'::jsonb)
+            || jsonb_build_object('stageChangedAt', to_char(NOW() AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"')))::text)
         WHERE id = ${id} AND organization_id = ${organizationId}
       `;
       return true;

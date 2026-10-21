@@ -160,7 +160,7 @@ export function LeadsKanban() {
 
     // Atualização otimista
     const updated = leads.map((lead) =>
-      lead.id === id ? { ...lead, stage: nextStage } : lead
+      lead.id === id ? { ...lead, stage: nextStage, stageChangedAt: new Date().toISOString() } : lead
     );
     setLeads(updated);
 

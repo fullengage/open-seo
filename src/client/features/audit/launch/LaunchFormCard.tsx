@@ -247,15 +247,14 @@ function RenderingOptions({
       )}
       {canRenderJavaScript === false && (
         <FieldDescription>
-          This deployment has no browser, so rendering needs a Context.dev API
-          key. Set <code>CONTEXT_API_KEY</code>, restart OpenSEO, then reload
-          this page.{" "}
+          Este servidor não tem navegador para renderizar JavaScript. A opção
+          fica indisponível até ser configurada pela equipe técnica.{" "}
           <a
             href="https://github.com/every-app/open-seo/blob/main/docs/SELF_HOSTING_CLOUDFLARE_OPERATIONS.md#render-javascript-in-site-audits"
             target="_blank"
             rel="noreferrer"
           >
-            Setup guide
+            Guia de configuração
           </a>
         </FieldDescription>
       )}

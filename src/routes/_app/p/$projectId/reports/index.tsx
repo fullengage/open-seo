@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { PageHeader } from "@/client/components/PageHeader";
 import { RelatorioComercial } from "@/client/features/fullweb/RelatorioComercial";
+import { RelatorioAuditoria, RelatorioSeo } from "@/client/features/fullweb/RelatoriosSeoAuditoria";
 import { Button } from "@/client/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
@@ -60,6 +61,8 @@ function ReportsPage() {
         />
 
         <RelatorioComercial />
+        <RelatorioSeo projectId={projectId} />
+        <RelatorioAuditoria projectId={projectId} />
         <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground pt-2">Relatórios de SEO salvos</h2>
         <QueryState query={reportsQuery} errorFallback="Falha ao carregar relatórios">
           {(data) => (

@@ -86,6 +86,8 @@ export interface PipelineLead {
   socioPrincipal?: string | null;
   stage: PipelineStage;
   createdAt: string;
+  /** Quando o lead entrou na etapa atual (gravado ao mover no funil). */
+  stageChangedAt?: string;
   notes?: string;
 
   // Campos de Enriquecimento B2B (360° / CRM & Prospecção):
