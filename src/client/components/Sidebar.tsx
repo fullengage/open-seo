@@ -52,6 +52,8 @@ import {
   DropdownMenuTrigger,
 } from "@/client/components/ui/dropdown-menu";
 
+import { getPipelineLeads } from "@/serverFunctions/pipelineLeads";
+
 const navButtonClass =
   "relative text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground data-active:bg-sidebar-accent data-active:text-sidebar-accent-foreground data-active:before:absolute data-active:before:inset-y-1 data-active:before:left-0 data-active:before:w-[3px] data-active:before:rounded-r-full data-active:before:bg-primary";
 
@@ -59,11 +61,13 @@ function SidebarNavLink({
   icon: Icon,
   label,
   linkProps,
+  badge,
   placeholder = false,
 }: {
   icon: ComponentType<{ className?: string }>;
   label: string;
   linkProps: LinkOptions;
+  badge?: number | string;
   /** Show the row without its link, while its project is still unknown. */
   placeholder?: boolean;
 }) {
@@ -84,8 +88,13 @@ function SidebarNavLink({
       aria-disabled={placeholder || undefined}
       className={navButtonClass}
     >
-      <Icon className="size-4" />
-      <span>{label}</span>
+      <Icon className="size-4 shrink-0" />
+      <span className="truncate">{label}</span>
+      {badge !== undefined ? (
+        <span className="ml-auto inline-flex items-center justify-center rounded-full bg-primary/15 px-1.5 py-0.5 text-[11px] font-semibold text-primary">
+          {badge}
+        </span>
+      ) : null}
     </SidebarMenuButton>
   );
   return (
@@ -137,15 +146,23 @@ export function Sidebar({
   // and while it is open its chat list takes the nav's place.
   const onSamRoute = pathname.includes("/sam");
 
+  const pipelineLeadsQuery = useQuery({
+    queryKey: ["pipelineLeads"],
+    queryFn: () => getPipelineLeads(),
+    enabled: ready,
+    staleTime: 30000,
+  });
+  const inboxCount = pipelineLeadsQuery.data?.length ?? 0;
+
   return (
     <UiSidebar variant="inset" collapsible="offcanvas" className="md:!p-0">
       <SidebarHeader className="gap-0 px-3 pb-1 pt-3">
         <Link
           to="/"
           onClick={() => setOpenMobile(false)}
-          className="px-1 pb-2 text-base font-semibold text-sidebar-foreground"
+          className="px-1 pb-2 text-base font-bold tracking-tight text-sidebar-foreground"
         >
-          OpenSEO
+          CHATHOOK
         </Link>
         <ProjectSwitcher
           activeProjectId={projectId}
@@ -180,11 +197,16 @@ export function Sidebar({
                   <SidebarMenu>
                     {group.items.map((item) => {
                       const { icon, label, ...linkProps } = item;
+                      const badge =
+                        label === "Caixa de Entrada" && inboxCount > 0
+                          ? inboxCount
+                          : undefined;
                       return (
                         <SidebarNavLink
-                          key={linkProps.to}
+                          key={linkProps.to + label}
                           icon={icon}
                           label={label}
+                          badge={badge}
                           linkProps={linkProps}
                           placeholder={navPlaceholder}
                         />

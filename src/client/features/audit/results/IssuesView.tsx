@@ -22,9 +22,9 @@ const SEVERITY_RULE: Record<IssueSeverity, string> = {
 };
 
 const SEVERITY_LABEL: Record<IssueSeverity, string> = {
-  critical: "Critical",
-  warning: "Warning",
-  info: "Info",
+  critical: "Crítico",
+  warning: "Aviso",
+  info: "Informações",
 };
 
 interface IssueGroup {
@@ -272,7 +272,7 @@ function IssueRow({
           )}
         </span>
         <span className="text-xs tabular-nums text-muted-foreground shrink-0">
-          {group.issues.length} {group.issues.length === 1 ? "page" : "pages"}
+          {group.issues.length} {group.issues.length === 1 ? "página" : "páginas"}
         </span>
         <ChevronRight
           className={`size-4 shrink-0 text-muted-foreground transition-transform ${
@@ -282,17 +282,26 @@ function IssueRow({
       </button>
 
       {open && (
-        <div className="pl-4 pr-4 pb-4 pt-0.5 space-y-3">
+        <div className="pl-4 pr-4 pb-4 pt-1 space-y-3">
           {group.explanation && (
-            <p className="text-sm text-muted-foreground max-w-prose">
-              {group.explanation}
-            </p>
+            <div className="space-y-1">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                O que encontramos e impacto:
+              </p>
+              <p className="text-sm text-muted-foreground max-w-prose">
+                {group.explanation}
+              </p>
+            </div>
           )}
           {group.howToFix && (
-            <p className="text-sm max-w-prose">
-              <span className="font-medium">How to fix: </span>
-              <span className="text-foreground/80">{group.howToFix}</span>
-            </p>
+            <div className="space-y-1">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                Como resolver:
+              </p>
+              <p className="text-sm text-foreground/90 max-w-prose">
+                {group.howToFix}
+              </p>
+            </div>
           )}
           <AffectedUrlList issues={group.issues} newIssueKeys={newIssueKeys} />
         </div>

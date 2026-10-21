@@ -260,13 +260,13 @@ function ResultsHeader({
   onExport: (format: "csv" | "json" | "sheets") => void;
 }) {
   const tabs: Array<{ tab: ResultsTab; label: string }> = [
-    { tab: "issues", label: `Issues (${issueCount})` },
-    { tab: "pages", label: `Pages (${pageCount})` },
+    { tab: "issues", label: `Problemas identificados (${issueCount})` },
+    { tab: "pages", label: `Páginas analisadas (${pageCount})` },
     ...(hasPerformanceTab
       ? [
           {
             tab: "performance" as const,
-            label: `Performance (${lighthouseCount})`,
+            label: `Desempenho (${lighthouseCount})`,
           },
         ]
       : []),
@@ -326,9 +326,9 @@ function StatsStrip({
   }, [issues]);
 
   const items: StatItem[] = [
-    { label: "Pages crawled", value: String(pagesCrawled) },
+    { label: "Páginas analisadas", value: String(pagesCrawled) },
     {
-      label: "Issues found",
+      label: "Problemas identificados",
       value: String(issues.length),
       valueClass: issues.length === 0 ? "text-success" : "",
       sub: issues.length > 0 && (
@@ -341,10 +341,10 @@ function StatsStrip({
                 title={severity}
               >
                 {severity === "critical"
-                  ? "Critical"
+                  ? "Crítico"
                   : severity === "warning"
-                    ? "Warning"
-                    : "Info"}{" "}
+                    ? "Aviso"
+                    : "Informações"}{" "}
                 {severityCounts[severity]}
               </SeverityBadge>
             ) : null,

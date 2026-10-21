@@ -50,51 +50,51 @@ export const AUDIT_ISSUE_TYPES = {
   },
   "server-error": {
     severity: "critical",
-    title: "Server error (5xx)",
+    title: "Erro no servidor (5xx)",
     explanation:
-      "The page returned a 5xx server error. Search engines that repeatedly see server errors will crawl the site less and may drop the page from the index.",
+      "A página retornou erro interno de servidor (código 5xx). O Google deixa de rastrear e pode desindexar páginas que apresentam instabilidade frequente.",
     howToFix:
-      "Check the server logs for this URL and fix the underlying error. If the page is gone, return a 404/410 or redirect it to a relevant page instead of erroring.",
+      "Verifique os registros do servidor para corrigir a falha técnica. Caso a página não exista mais, redirecione-a para uma URL equivalente via 301.",
   },
   "broken-internal-link": {
     severity: "critical",
-    title: "Broken internal link",
+    title: "Link interno quebrado",
     explanation:
-      "This page links to an internal URL that returns an error status (4xx/5xx). Broken links waste crawl budget, leak link equity, and frustrate users — they are among the most common and most damaging technical SEO issues.",
+      "Esta página aponta para um link interno inexistente ou com erro (4xx/5xx). Links quebrados frustram visitantes e prejudicam a distribuição de autoridade dentro do site.",
     howToFix:
-      "Update the link to point at the correct live URL, or remove it. If the target was moved, prefer linking directly to the new URL rather than relying on a redirect.",
+      "Atualize o link para o endereço correto e ativo, ou remova o apontamento.",
   },
   "missing-title": {
     severity: "critical",
-    title: "Missing title tag",
+    title: "Tag de título ausente",
     explanation:
-      "The page has no <title>. The title is the strongest on-page relevance signal and the headline shown in search results; without it search engines generate one themselves, usually badly.",
+      "A página não possui título definido (<title>). O título é o principal sinal de relevância e o cabeçalho que aparece quando alguém pesquisa sua empresa no Google.",
     howToFix:
-      "Add a unique, descriptive <title> of roughly 50–60 characters that includes the page's primary topic.",
+      "Adicione um título descritivo e único com 50 a 60 caracteres contendo o nome do serviço ou produto principal da página.",
   },
   "broken-page": {
     severity: "warning",
-    title: "Page returns an error (4xx)",
+    title: "Página retorna erro (4xx)",
     explanation:
-      "This crawled URL returned a client error (e.g. 404). If it is referenced from your sitemap or other pages, crawlers keep wasting requests on it.",
+      "Esta URL retornou erro de página não encontrada (como 404). Se ela estiver em menus ou sitemaps, clientes e buscadores perdem tempo tentando acessá-la.",
     howToFix:
-      "If the page should exist, restore it. If it is intentionally gone, remove it from the sitemap and internal links, and consider a 301 redirect to the closest live page.",
+      "Restaure o conteúdo ou remova o link dos menus e sitemap. Caso haja outra página similar, crie um redirecionamento 301.",
   },
   "duplicate-title": {
     severity: "warning",
-    title: "Duplicate title",
+    title: "Título duplicado",
     explanation:
-      "Multiple pages share the same title tag. Search engines use titles to differentiate pages; duplicates make pages compete with each other and depress click-through rates.",
+      "Várias páginas compartilham exatamente o mesmo título. Isso faz com que suas próprias páginas concorram entre si no Google.",
     howToFix:
-      "Write a unique title for each page describing its specific content. For templated pages, include the distinguishing attribute (name, category, location) in the template.",
+      "Escreva um título exclusivo para cada página destacando sua finalidade específica ou categoria.",
   },
   "duplicate-meta-description": {
     severity: "warning",
-    title: "Duplicate meta description",
+    title: "Descrição duplicada",
     explanation:
-      "Multiple pages share the same meta description, so search results show identical snippets and users cannot tell the pages apart.",
+      "Várias páginas têm a mesma descrição, fazendo com que os resumos no Google pareçam repetidos e confusos para os clientes.",
     howToFix:
-      "Write a unique meta description per page, or remove the duplicated one entirely — search engines will generate a snippet from page content, which beats a wrong duplicate.",
+      "Personalize a descrição de cada página com um resumo único do seu conteúdo.",
   },
   "duplicate-content": {
     severity: "warning",
@@ -186,43 +186,43 @@ export const AUDIT_ISSUE_TYPES = {
   },
   "title-too-long": {
     severity: "info",
-    title: "Title too long",
+    title: "Título muito longo",
     explanation:
-      "The title exceeds ~60 characters, so search results will truncate it and the ending may be cut off mid-phrase.",
+      "O título da página excede cerca de 60 caracteres. Títulos muito longos costumam ser cortados nos resultados de busca do Google, prejudicando a clareza para o cliente.",
     howToFix:
-      "Shorten the title to roughly 50–60 characters, front-loading the most important words.",
+      "Encurte o título para 50 a 60 caracteres, posicionando os termos mais importantes no início para garantir impacto visual.",
   },
   "title-too-short": {
     severity: "info",
-    title: "Title too short",
+    title: "Título muito curto",
     explanation:
-      "The title is under ~10 characters, which is usually too generic to describe the page or attract clicks.",
+      "O título possui menos de 10 caracteres, sendo genérico demais para descrever o serviço ou produto e atrair o clique do cliente.",
     howToFix:
-      "Expand the title into a descriptive phrase (roughly 30–60 characters) that states what the page offers.",
+      "Amplie o título para uma frase clara e descritiva (30 a 60 caracteres) que explique com exatidão o que a empresa oferece.",
   },
   "meta-description-too-long": {
     severity: "info",
-    title: "Meta description too long",
+    title: "Descrição da página muito longa",
     explanation:
-      "The meta description exceeds ~160 characters, so search engines will truncate the snippet.",
+      "A descrição da página (meta description) ultrapassa cerca de 160 caracteres, fazendo com que o Google corte o final do texto no resumo da busca.",
     howToFix:
-      "Trim the description to roughly 70–160 characters while keeping the core message and call to action.",
+      "Ajuste a descrição para ter entre 70 e 160 caracteres, mantendo a mensagem principal clara e uma chamada para ação objetiva.",
   },
   "meta-description-too-short": {
     severity: "info",
-    title: "Meta description too short",
+    title: "Descrição da página muito curta",
     explanation:
-      "The meta description is under ~70 characters. Short descriptions waste the snippet space search results give you, and search engines often ignore them in favor of text pulled from the page.",
+      "A descrição possui menos de 70 caracteres, desperdiçando o espaço de destaque no Google para convencer o cliente a acessar seu site.",
     howToFix:
-      "Expand the description to roughly 70–160 characters that summarize the page and give a reason to click.",
+      "Crie um resumo convidativo entre 70 e 160 caracteres explicando o diferencial e por que o usuário deve clicar.",
   },
   "heading-order-skip": {
     severity: "info",
-    title: "Heading levels skip",
+    title: "Hierarquia de títulos incorreta",
     explanation:
-      "The heading hierarchy skips levels (e.g. an H4 directly after an H2). This weakens document structure for accessibility tools and content parsing.",
+      "A estrutura de cabeçalhos pula níveis (por exemplo, usando H4 diretamente após H2). Uma hierarquia desorganizada dificulta a leitura do conteúdo tanto pelo Google quanto por leitores de tela.",
     howToFix:
-      "Adjust heading levels so they descend one step at a time (H1 → H2 → H3) without skipping.",
+      "Organize os títulos em sequência lógica e descendente (H1 → H2 → H3) respeitando a ordem de importância dos tópicos.",
   },
   "slow-response": {
     severity: "info",

@@ -31,10 +31,14 @@ function IndexRedirect() {
   });
 
   useEffect(() => {
-    // getProjects always returns at least one project.
     const projectId = lastProjectId ?? data?.[0]?.id;
-    if (!projectId) return;
-    void navigate({ to: "/p/$projectId", params: { projectId } });
+    if (projectId) {
+      void navigate({ to: "/p/$projectId", params: { projectId } });
+      return;
+    }
+    if (data && data.length === 0) {
+      void navigate({ to: "/projects" });
+    }
   }, [lastProjectId, data, navigate]);
 
   useEffect(() => {

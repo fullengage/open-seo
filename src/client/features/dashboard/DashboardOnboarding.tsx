@@ -67,10 +67,9 @@ export function DashboardOnboarding({
       className="overflow-hidden rounded-xl border border-border bg-card"
     >
       <header className="border-b border-border px-5 py-5 sm:px-6">
-        <h2 className="text-lg font-semibold">Get started</h2>
+        <h2 className="text-lg font-semibold">Primeiros Passos</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Research competitors and keywords, audit your site, and connect your
-          tools.
+          Configure sua presença digital, identifique oportunidades de palavras-chave e realize o diagnóstico do seu site.
         </p>
       </header>
       <Accordion

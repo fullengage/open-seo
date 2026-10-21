@@ -17,39 +17,38 @@ export const setupSteps: {
 }[] = [
   {
     id: "competitor",
-    label: "Explore a competitor",
-    detail: "Find topics and links worth learning from.",
+    label: "Analisar concorrentes",
+    detail: "Descubra oportunidades e páginas de referência no seu mercado.",
     icon: Globe,
   },
   {
     id: "keywords",
-    label: "Get keyword ideas",
-    detail: "Start from one keyword and see what people search for.",
+    label: "Pesquisar palavras-chave",
+    detail: "Identifique termos e perguntas que potenciais clientes pesquisam.",
     icon: Lightbulb,
   },
   {
     id: "audit",
-    label: "Audit your site",
-    detail: "Crawl for broken links, missing tags, and indexability problems.",
+    label: "Diagnóstico técnico do site",
+    detail: "Avalie estrutura, velocidade, títulos e páginas com problemas.",
     icon: ClipboardCheck,
   },
   {
     id: "mcp",
-    label: "Connect your AI agent",
-    detail: "Use OpenSEO inside Claude or your favorite agent.",
+    label: "Conectar canais e inteligência",
+    detail: "Integre canais de comunicação e agentes comerciais ao sistema.",
     icon: Bot,
   },
   {
     id: "team",
-    label: "Invite a teammate",
-    detail: "Share the work, or keep things solo for now.",
+    label: "Convidar equipe comercial",
+    detail: "Compartilhe o funil de prospecção e acompanhe oportunidades em conjunto.",
     icon: Users,
   },
   {
     id: "project",
-    label: "Working on multiple websites?",
-    detail:
-      "Create another project, or let your AI agent set up a list of sites.",
+    label: "Cadastrar nova empresa ou site",
+    detail: "Adicione outros projetos para monitorar e prospectar.",
     icon: FolderPlus,
   },
 ];

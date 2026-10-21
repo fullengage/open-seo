@@ -96,10 +96,7 @@ export function AuthenticatedAppLayout({
     shouldCheckSeoApiKeyStatus,
   ]);
 
-  const shouldShowSeoApiWarning =
-    !seoApiKeyStatusError &&
-    isSeoApiKeyConfigured === false &&
-    !showMissingSeoApiKeyModal;
+  const shouldShowSeoApiWarning = false;
 
   return (
     <SidebarProvider className="h-[100dvh] min-h-0 overflow-hidden">
@@ -138,8 +135,8 @@ function MobileTopBar() {
   return (
     <div className="flex shrink-0 items-center gap-1 border-b border-border bg-card px-2 py-1.5 md:hidden">
       <SidebarTrigger aria-label="Toggle sidebar" />
-      <Link to="/" className="ml-1 font-semibold text-foreground">
-        OpenSEO
+      <Link to="/" className="ml-1 font-bold tracking-tight text-foreground">
+        CHATHOOK
       </Link>
     </div>
   );

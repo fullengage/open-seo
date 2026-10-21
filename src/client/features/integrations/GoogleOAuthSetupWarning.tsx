@@ -16,15 +16,17 @@ export function GoogleOAuthSetupWarning({
   return (
     <Alert variant="warning">
       <AlertTriangle className="size-4" />
-      <AlertTitle>Google OAuth client not configured</AlertTitle>
-      <AlertDescription>
+      <AlertTitle>Integração com {integrationName} aguardando configuração</AlertTitle>
+      <AlertDescription className="space-y-1">
         <p>
-          Add your Google client ID and secret to this OpenSEO deployment before
-          connecting {integrationName}.
+          Para visualizar cliques, impressões e termos de busca reais do seu site, conecte sua conta Google Search Console com segurança.
+        </p>
+        <p className="text-xs text-muted-foreground">
+          Caso ainda não tenha configurado as credenciais no servidor, consulte o guia passo a passo.
         </p>
         <SafeExternalLink
           url={docsUrl}
-          label="Open setup guide"
+          label="Ver guia de conexão do Google"
           className="inline-flex items-center gap-1 font-medium underline underline-offset-2"
         />
       </AlertDescription>

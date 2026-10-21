@@ -30,8 +30,8 @@ export function ReportsList({
     return (
       <EmptyState
         icon={FileText}
-        title="No reports yet"
-        description="Run an OpenSEO skill such as seo-audit from Claude Code or Codex and the report will appear here."
+        title="Nenhum relatório gerado ainda"
+        description="Gere uma auditoria técnica ou acompanhamento de desempenho para consolidar relatórios executivos para este projeto."
       />
     );
   }
@@ -42,10 +42,10 @@ export function ReportsList({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Title</TableHead>
-              <TableHead>Created by</TableHead>
-              <TableHead>Type</TableHead>
-              <TableHead>Updated</TableHead>
+              <TableHead>Título</TableHead>
+              <TableHead>Criado por</TableHead>
+              <TableHead>Tipo</TableHead>
+              <TableHead>Atualizado</TableHead>
               <TableHead />
             </TableRow>
           </TableHeader>
@@ -74,13 +74,13 @@ export function ReportsList({
                   {formatRelativeTime(report.updatedAt)}
                 </TableCell>
                 <TableCell className="w-10 text-right">
-                  <RowActionsMenu label={`Actions for ${report.title}`}>
+                  <RowActionsMenu label={`Ações para ${report.title}`}>
                     <DropdownMenuItem
                       variant="destructive"
                       onClick={() => onDelete(report)}
                     >
                       <Trash2 />
-                      Delete
+                      Excluir
                     </DropdownMenuItem>
                   </RowActionsMenu>
                 </TableCell>
